@@ -1013,9 +1013,8 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
                         viewModel.customPanelHeight = targetHeight
                     }
 
-                    // Slightly increase width and highlight clearly when dragging to increase panel height
-                    val isIncreasingHeight = dy > 0
-                    setHandleHighlighted(isIncreasingHeight)
+                    // Widen and highlight the bar while dragging, whether growing or shrinking the panel
+                    setHandleHighlighted(dy != 0)
 
                     return true
                 }

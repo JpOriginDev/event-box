@@ -103,20 +103,16 @@ internal object OGEventBoxRepository {
 
     fun log(name: String, params: Map<String, Any?>? = null) {
         if (!isActive || name.isBlank()) return
-        val warnings = if (firebaseChecksEnabled) {
-            com.ogmediaapps.eventbox.validator.OGEventBoxValidator.validateEvent(name, params)
-        } else {
-            emptyList()
-        }
-        synchronized(lock) {
-            val event = OGEventBoxDebugEvent(
-                index = nextIndex++,
-                timestampMillis = System.currentTimeMillis(),
-                name = name,
-                params = params,
-                warnings = warnings
-            )
-            _events.value = (_events.value + event).takeLast(MAX_EVENTS)
+        // A testing aid must never crash the host app, even when a caller's map is mutated
+        // concurrently or holds a value whose toString() throws.
+        runCatching {
+            val snapshot = params?.let { LinkedHashMap(it) }
+            val warnings = if (firebaseChecksEnabled) {
+                com.ogmediaapps.eventbox.validator.OGEventBoxValidator.validateEvent(name, snapshot)
+            } else {
+                emptyList()
+            }
+            append(name, snapshot, warnings)
         }
     }
 
@@ -138,17 +134,23 @@ internal object OGEventBoxRepository {
 
     fun setUserProperty(name: String, value: String?) {
         if (!isActive || name.isBlank()) return
-        val warnings = if (firebaseChecksEnabled) {
-            com.ogmediaapps.eventbox.validator.OGEventBoxValidator.validateUserProperty(name, value)
-        } else {
-            emptyList()
+        runCatching {
+            val warnings = if (firebaseChecksEnabled) {
+                com.ogmediaapps.eventbox.validator.OGEventBoxValidator.validateUserProperty(name, value)
+            } else {
+                emptyList()
+            }
+            val params = mapOf("property_name" to name, "property_value" to (value ?: "null"))
+            append("user_property: $name", params, warnings)
         }
-        val params = mapOf("property_name" to name, "property_value" to (value ?: "null"))
+    }
+
+    private fun append(name: String, params: Map<String, Any?>?, warnings: List<String>) {
         synchronized(lock) {
             val event = OGEventBoxDebugEvent(
                 index = nextIndex++,
                 timestampMillis = System.currentTimeMillis(),
-                name = "user_property: $name",
+                name = name,
                 params = params,
                 warnings = warnings
             )

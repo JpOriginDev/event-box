@@ -25,7 +25,7 @@ In your app's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.github.JpOriginDev:event-box:1.0.0")
+    implementation("com.github.JpOriginDev:event-box:1.1.0")
 }
 ```
 
@@ -102,7 +102,8 @@ OGEventBoxLog.log("item_selected", params);
 OGEventBoxLog.setUserProperty("user_tier", "premium");
 ```
 
-Log each event once. Calls are ignored while the box is off.
+Log each event once. Calls are ignored while the box is off, and logging never throws into your
+app.
 
 ### Firebase Limits & Validation Warnings
 
@@ -154,6 +155,7 @@ OGEventBoxLog.setPanelResizingEnabled(false);
 - **Panel**: shows `number  time  event_name`, newest at the bottom. It shrinks back to the bubble
   after 6 seconds without touch.
     - **Resize icon**: tap to blink the bottom-edge drag handle twice to guide where to drag.
+      While you drag the handle up or down, its bar widens and lights up.
     - **Warning icon**: tap to smoothly expand/collapse Firebase limit warnings.
     - **Pin**: stops it from auto-shrinking.
     - **Minimize** (or tap the logo): shrinks it now.
@@ -190,14 +192,17 @@ OGEventBoxLog.setBubbleIconResId(R.mipmap.my_logo)
 | `OGEventBoxLog.remainingMinutes(context)` | Minutes left (0 when off) |
 | `OGEventBoxLog.events` | The log as `StateFlow<List<OGEventBoxDebugEvent>>` (max 200) |
 | `OGEventBoxLog.clear()` | Empties the log |
+| `OGEventBoxLog.setUserProperty(name, value)` | Records a user property (checked against Firebase limits) |
 
 ## Release builds
 
 Nothing extra is needed. The library ships its own ProGuard/R8 rules and keeps only the public API
-(`OGEventBoxLog`, `OGEventBoxDebugEvent`).
+(`OGEventBoxLog`, `OGEventBoxDebugEvent`, `OGEventBoxValidator`).
 
 ## Known limits
 
+- The bubble sits on the left or right edge; its window is as wide as the bubble while collapsed,
+  so it never blocks touches elsewhere.
 - A dialog opened later briefly covers the box (about 150 ms) before it lifts back on top.
 - The box re-adds itself when the notification shade or keyboard takes focus, which restarts the
   auto-shrink timer.

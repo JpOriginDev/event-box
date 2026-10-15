@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * ViewModel managing presentation logic and UI state for OGEventBox.
  */
-internal class OGEventBoxViewModel(    private val repository: OGEventBoxRepository = OGEventBoxRepository) {
+internal class OGEventBoxViewModel(private val repository: OGEventBoxRepository = OGEventBoxRepository) {
 
     var anchorX: Float = Float.NaN
     var anchorY: Float = Float.NaN
