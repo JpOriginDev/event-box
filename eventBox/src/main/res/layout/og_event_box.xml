@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The floating OGEventBox overlay (testing only, see OGEventBoxLog).
+    Inflated into OGEventBoxView, which is placed in its own TYPE_APPLICATION window.
+
+    Deliberately styled with fixed colors rather than Material theme attributes:
+    this box is a debug overlay that must stay readable on top of any host app theme.
+-->
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:parentTag="android.widget.FrameLayout">
+
+    <!-- Expanded panel. -->
+    <LinearLayout
+        android:id="@+id/og_event_box_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_margin="@dimen/og_event_box_margin"
+        android:background="@drawable/og_event_box_panel_background"
+        android:elevation="6dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/og_event_box_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/og_event_box_header_background"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="10dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="8dp">
+
+            <ImageView
+                android:id="@+id/og_event_box_header_icon"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:background="@drawable/og_event_box_logo_background"
+                android:contentDescription="@string/og_event_box_title"
+                android:padding="6dp"
+                android:src="@drawable/og_event_box_ic_bolt"
+                android:tint="@color/og_event_box_on_accent" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:letterSpacing="0.08"
+                android:text="@string/og_event_box_title"
+                android:textColor="@color/og_event_box_name"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/og_event_box_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/og_event_box_count_background"
+                android:gravity="center"
+                android:minWidth="26dp"
+                android:paddingStart="8dp"
+                android:paddingTop="2dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="2dp"
+                android:text="@string/og_event_box_count_zero"
+                android:textColor="@color/og_event_box_name"
+                android:textSize="12sp" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageButton
+                android:id="@+id/og_event_box_pin"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:background="@drawable/og_event_box_button_background"
+                android:contentDescription="@string/og_event_box_auto_shrink_on"
+                android:padding="6dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/og_event_box_ic_pin" />
+
+            <ImageButton
+                android:id="@+id/og_event_box_minimize"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/og_event_box_button_background"
+                android:contentDescription="@string/og_event_box_minimize"
+                android:padding="6dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/og_event_box_ic_minimize"
+                android:tint="@color/og_event_box_name" />
+
+            <TextView
+                android:id="@+id/og_event_box_clear"
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/og_event_box_button_background"
+                android:gravity="center"
+                android:letterSpacing="0.05"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:text="@string/og_event_box_clear"
+                android:textColor="@color/og_event_box_name"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/og_event_box_list_height">
+
+            <ScrollView
+                android:id="@+id/og_event_box_scroll"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fadeScrollbars="false"
+                android:paddingStart="12dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="6dp"
+                android:scrollbarThumbVertical="@color/og_event_box_index">
+
+                <LinearLayout
+                    android:id="@+id/og_event_box_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </ScrollView>
+
+            <TextView
+                android:id="@+id/og_event_box_empty"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="@string/og_event_box_empty"
+                android:textColor="@color/og_event_box_index"
+                android:textSize="13sp" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <!--
+        Shrunk state (the state debug mode starts in): the translucent logo bubble, with a badge
+        counting events fired while shrunk.
+    -->
+    <FrameLayout
+        android:id="@+id/og_event_box_bubble"
+        android:layout_width="@dimen/og_event_box_bubble_size"
+        android:layout_height="@dimen/og_event_box_bubble_size"
+        android:layout_gravity="top|start"
+        android:layout_margin="@dimen/og_event_box_margin"
+        android:elevation="6dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/og_event_box_bubble_icon"
+            android:layout_width="@dimen/og_event_box_bubble_icon_size"
+            android:layout_height="@dimen/og_event_box_bubble_icon_size"
+            android:layout_gravity="center"
+            android:background="@drawable/og_event_box_bubble_background"
+            android:contentDescription="@string/og_event_box_expand"
+            android:padding="9dp"
+            android:src="@drawable/og_event_box_ic_bolt"
+            android:tint="@color/og_event_box_on_accent" />
+
+        <TextView
+            android:id="@+id/og_event_box_bubble_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:background="@drawable/og_event_box_badge_background"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:textColor="@color/og_event_box_on_accent"
+            android:textSize="9sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:ignore="SmallSp" />
+
+    </FrameLayout>
+
+</merge>

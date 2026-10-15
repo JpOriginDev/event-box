@@ -23,5 +23,6 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "EventBox"
-include(":app")
+// The sample app is git-ignored; include it only when present locally.
+if (file("app").exists()) include(":app")
 include(":eventBox")

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- OGEventBox (testing overlay). -->
+    <string name="og_event_box_title">EVENTS</string>
+    <string name="og_event_box_clear">CLEAR</string>
+    <string name="og_event_box_count_zero">0</string>
+    <string name="og_event_box_empty">No events yet</string>
+    <string name="og_event_box_minimize">Shrink the event log</string>
+    <string name="og_event_box_expand">Show the event log</string>
+    <string name="og_event_box_auto_shrink_on">Keep the event log open</string>
+    <string name="og_event_box_auto_shrink_off">Let the event log shrink again</string>
+    <string name="og_event_box_close">Close the event log</string>
+</resources>

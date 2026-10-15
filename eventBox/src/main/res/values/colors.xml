@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    OGEventBox only (testing overlay). Fixed colors on purpose: the box floats over whatever
+    the host app's theme is, so unlike the ad layouts it can't take its colors from theme attrs.
+-->
+<resources>
+    <color name="og_event_box_surface">#F01E2538</color>
+    <color name="og_event_box_header">#F0161C2B</color>
+    <color name="og_event_box_accent">#FF22C55E</color>
+    <color name="og_event_box_on_accent">#FFFFFFFF</color>
+    <color name="og_event_box_chip">#33FFFFFF</color>
+    <color name="og_event_box_name">#FFFFFFFF</color>
+    <color name="og_event_box_name_latest">#FF3DDC84</color>
+    <color name="og_event_box_index">#FF7A89A6</color>
+    <color name="og_event_box_time">#FF5AA9FF</color>
+    <color name="og_event_box_badge">#FFF2545B</color>
+    <color name="og_event_box_close">#E6E53935</color>
+</resources>

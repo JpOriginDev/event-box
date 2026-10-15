@@ -1,0 +1,9 @@
+# Applied automatically to every app that depends on Event Box.
+# Only the public API is kept by name; everything else may be obfuscated and removed by the
+# consuming app's R8.
+-keep public class com.ogmediaapps.eventbox.OGEventBoxLog {
+    public *;
+}
+-keep public class com.ogmediaapps.eventbox.model.OGEventBoxDebugEvent {
+    public *;
+}

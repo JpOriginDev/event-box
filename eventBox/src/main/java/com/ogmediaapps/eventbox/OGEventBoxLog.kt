@@ -1,0 +1,225 @@
+package com.ogmediaapps.eventbox
+
+import android.app.Application
+import android.content.Context
+import android.widget.ImageView
+import androidx.annotation.ColorInt
+import androidx.annotation.DrawableRes
+import com.ogmediaapps.eventbox.data.OGEventBoxRepository
+import com.ogmediaapps.eventbox.model.OGEventBoxDebugEvent
+import com.ogmediaapps.eventbox.view.OGEventBoxOverlay
+import kotlinx.coroutines.flow.StateFlow
+
+/**
+ * Public entry point for OGEventBox: on-device event log testing overlay.
+ */
+object OGEventBoxLog {
+
+    // =========================================================================
+    // 1. Constants
+    // =========================================================================
+
+    const val MAX_EVENTS = OGEventBoxRepository.MAX_EVENTS
+
+    // =========================================================================
+    // 2. Installation & Initialization
+    // =========================================================================
+
+    /**
+     * Installs OGEventBox in the app process using the configured debug mode settings.
+     * Call from [Application.onCreate].
+     */
+    @JvmStatic
+    fun install(context: Context): OGEventBoxLog {
+        (context.applicationContext as? Application)?.let { OGEventBoxOverlay.install(it) }
+        OGEventBoxRepository.restoreSession(context)
+        return this
+    }
+
+    /**
+     * Installs OGEventBox in the app process with explicit parameters.
+     * Call from [Application.onCreate].
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun install(
+        context: Context,
+        debugModeEnabled: Boolean,
+        debugModeDurationHours: Double = this.debugModeDurationHours
+    ): OGEventBoxLog {
+        this.debugModeEnabled = debugModeEnabled
+        this.debugModeDurationHours = debugModeDurationHours
+        return install(context)
+    }
+
+    // =========================================================================
+    // 3. Debug Mode & Duration Configuration
+    // =========================================================================
+
+    @get:JvmStatic
+    @set:JvmSynthetic
+    var debugModeEnabled: Boolean
+        get() = OGEventBoxRepository.debugModeEnabled
+        set(value) { OGEventBoxRepository.debugModeEnabled = value }
+
+    @get:JvmStatic
+    @set:JvmSynthetic
+    var debugModeDurationHours: Double
+        get() = OGEventBoxRepository.debugModeDurationHours
+        set(value) { OGEventBoxRepository.debugModeDurationHours = value }
+
+    /**
+     * Fluent setter for debug mode enabled flag.
+     */
+    @JvmStatic
+    fun setDebugModeEnabled(enabled: Boolean): OGEventBoxLog = apply {
+        this.debugModeEnabled = enabled
+    }
+
+    /**
+     * Fluent setter for default debug mode testing duration in hours.
+     */
+    @JvmStatic
+    fun setDebugModeDurationHours(durationHours: Double): OGEventBoxLog = apply {
+        this.debugModeDurationHours = durationHours
+    }
+
+    /**
+     * Updates the testing duration in hours.
+     * If currently active, recalculates expiry and restarts the timer.
+     */
+    @JvmStatic
+    fun updateDebugModeDurationHours(context: Context, durationHours: Double) {
+        OGEventBoxRepository.updateDebugModeDurationHours(context, durationHours)
+    }
+
+    // =========================================================================
+    // 4. Session State & Activation Controls
+    // =========================================================================
+
+    /**
+     * True if a debug session is currently active and the overlay is visible.
+     */
+    @get:JvmStatic
+    val isActive: Boolean get() = OGEventBoxRepository.isActive
+
+    /**
+     * StateFlow emitting whether a debug session is currently active.
+     */
+    @get:JvmStatic
+    val isActiveFlow: StateFlow<Boolean> get() = OGEventBoxRepository.isActiveFlow
+
+    /**
+     * Enables or disables debug mode.
+     */
+    @JvmStatic
+    fun setEnabled(context: Context, enabled: Boolean): Boolean {
+        return OGEventBoxRepository.setEnabled(context, enabled)
+    }
+
+    /**
+     * Remaining minutes in the current active session, or 0 when inactive.
+     */
+    @JvmStatic
+    fun remainingMinutes(context: Context): Int {
+        return OGEventBoxRepository.remainingMinutes(context)
+    }
+
+    /**
+     * Ends the current debug session and dismisses the box overlay.
+     */
+    @JvmStatic
+    fun disable() {
+        OGEventBoxRepository.disable()
+        OGEventBoxOverlay.resetPosition()
+        OGEventBoxOverlay.sync()
+    }
+
+    // =========================================================================
+    // 5. Event Logging & Stream
+    // =========================================================================
+
+    /**
+     * Observable event list flow (capped at [MAX_EVENTS]).
+     */
+    @get:JvmStatic
+    val events: StateFlow<List<OGEventBoxDebugEvent>> get() = OGEventBoxRepository.events
+
+    /**
+     * Logs an event into the OGEventBox log.
+     */
+    @JvmStatic
+    fun log(name: String) {
+        OGEventBoxRepository.log(name)
+    }
+
+    /**
+     * Empties the event log and restarts numbering at 1.
+     */
+    @JvmStatic
+    fun clear() {
+        OGEventBoxRepository.clear()
+        OGEventBoxOverlay.viewModel.lastSeenIndex = 0
+    }
+
+    // =========================================================================
+    // 6. Bubble Styling & Appearance
+    // =========================================================================
+
+    @get:JvmStatic
+    @set:JvmSynthetic
+    @DrawableRes
+    var bubbleIconResId: Int = 0
+
+    @get:JvmStatic
+    @set:JvmSynthetic
+    var bubbleIconScaleType: ImageView.ScaleType? = null
+
+    @get:JvmStatic
+    @set:JvmSynthetic
+    @ColorInt
+    var bubbleBackgroundColor: Int = 0
+
+    @get:JvmStatic
+    @set:JvmSynthetic
+    @ColorInt
+    var bubbleBorderColor: Int = 0
+
+    @get:JvmStatic
+    @set:JvmSynthetic
+    var bubbleBorderWidthDp: Float = -1f
+
+    @get:JvmStatic
+    @set:JvmSynthetic
+    var bubbleCornerRadiusDp: Float = -1f
+
+    @JvmStatic
+    fun setBubbleIconResId(@DrawableRes iconResId: Int): OGEventBoxLog = apply {
+        this.bubbleIconResId = iconResId
+    }
+
+    @JvmStatic
+    fun setBubbleIconScaleType(scaleType: ImageView.ScaleType?): OGEventBoxLog = apply {
+        this.bubbleIconScaleType = scaleType
+    }
+
+    @JvmStatic
+    fun setBubbleBackgroundColor(@ColorInt color: Int): OGEventBoxLog = apply {
+        this.bubbleBackgroundColor = color
+    }
+
+    @JvmStatic
+    fun setBubbleBorderColor(@ColorInt color: Int): OGEventBoxLog = apply {
+        this.bubbleBorderColor = color
+    }
+
+    @JvmStatic
+    fun setBubbleBorderWidthDp(widthDp: Float): OGEventBoxLog = apply {
+        this.bubbleBorderWidthDp = widthDp
+    }
+
+    @JvmStatic
+    fun setBubbleCornerRadiusDp(radiusDp: Float): OGEventBoxLog = apply {
+        this.bubbleCornerRadiusDp = radiusDp
+    }
+}

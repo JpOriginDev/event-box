@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shrunk state: a see-through accent disc (the view itself is drawn at reduced alpha). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="@color/og_event_box_accent" />
+    <stroke android:width="1dp" android:color="@color/og_event_box_on_accent" />
+</shape>

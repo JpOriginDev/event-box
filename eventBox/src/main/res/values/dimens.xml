@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- OGEventBox (testing overlay). -->
+    <dimen name="og_event_box_margin">18dp</dimen>
+    <dimen name="og_event_box_corner_radius">16dp</dimen>
+    <dimen name="og_event_box_list_height">180dp</dimen>
+    <dimen name="og_event_box_row_spacing">3dp</dimen>
+    <dimen name="og_event_box_bubble_size">54dp</dimen>
+    <dimen name="og_event_box_bubble_icon_size">46dp</dimen>
+    <dimen name="og_event_box_close_size">56dp</dimen>
+    <!-- How far the close target sits above the bottom of the screen. -->
+    <dimen name="og_event_box_close_margin">56dp</dimen>
+    <!-- Room around the close target inside its own window, so growing it can't clip. -->
+    <dimen name="og_event_box_close_slack">24dp</dimen>
+</resources>
