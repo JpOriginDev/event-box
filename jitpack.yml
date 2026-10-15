@@ -1,2 +1,4 @@
 jdk:
   - openjdk17
+install:
+  - ./gradlew clean :eventBox:publishReleasePublicationToMavenLocal --console=plain --quiet
