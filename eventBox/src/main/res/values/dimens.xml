@@ -4,6 +4,8 @@
     <dimen name="og_event_box_margin">18dp</dimen>
     <dimen name="og_event_box_corner_radius">16dp</dimen>
     <dimen name="og_event_box_list_height">180dp</dimen>
+    <dimen name="og_event_box_min_list_height">80dp</dimen>
+    <dimen name="og_event_box_resize_handle_height">18dp</dimen>
     <dimen name="og_event_box_row_spacing">3dp</dimen>
     <dimen name="og_event_box_bubble_size">54dp</dimen>
     <dimen name="og_event_box_bubble_icon_size">46dp</dimen>

@@ -8,6 +8,9 @@
 -keep public class com.ogmediaapps.eventbox.model.OGEventBoxDebugEvent {
     public *;
 }
+-keep public class com.ogmediaapps.eventbox.validator.OGEventBoxValidator {
+    public *;
+}
 
 # ---- Hide the rest ----
 # Move every remaining class into one package and let R8 rename members aggressively.

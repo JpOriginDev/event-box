@@ -15,4 +15,9 @@
     <color name="og_event_box_time">#FF5AA9FF</color>
     <color name="og_event_box_badge">#FFF2545B</color>
     <color name="og_event_box_close">#E6E53935</color>
+    <color name="og_event_box_warning">#FFF59E0B</color>
+    <color name="og_event_box_warning_surface">#26F59E0B</color>
+    <color name="og_event_box_warning_border">#66F59E0B</color>
+    <color name="og_event_box_warning_text">#FFFDE047</color>
+    <color name="og_event_box_divider">#26FFFFFF</color>
 </resources>

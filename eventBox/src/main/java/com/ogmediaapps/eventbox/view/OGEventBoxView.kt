@@ -1,5 +1,10 @@
 package com.ogmediaapps.eventbox.view
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.AnimatorSet
+import android.animation.ArgbEvaluator
+import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -8,12 +13,16 @@ import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Outline
 import android.graphics.PointF
+import android.graphics.Rect
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
+import android.transition.AutoTransition
+import android.transition.Transition
+import android.transition.TransitionManager
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -23,6 +32,7 @@ import android.view.ViewConfiguration
 import android.view.ViewOutlineProvider
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
@@ -67,8 +77,12 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
     private val countView: TextView
     private val clearButton: TextView
     private val pinButton: ImageButton
+    private val resizeButton: ImageButton
     private val minimizeButton: ImageButton
     private val scrollView: ScrollView
+    private val contentContainer: FrameLayout
+    private val resizeHandle: View
+    private val resizeHandleBar: View
     private val listContainer: LinearLayout
     private val emptyView: TextView
     private val bubble: View
@@ -99,6 +113,10 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
 
     private var dragInProgress = false
     private var settleAnimator: ValueAnimator? = null
+    private var blinkAnimator: AnimatorSet? = null
+    private var handleHighlightAnimator: ValueAnimator? = null
+    private var isHandleHighlighted = false
+    private var expandedEventIndex: Int? = null
 
     private var scope: CoroutineScope? = null
     private val autoShrinkRunnable = Runnable { if (!viewModel.isPinned) collapse(animate = true) }
@@ -114,8 +132,14 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         countView = findViewById(R.id.og_event_box_count)
         clearButton = findViewById(R.id.og_event_box_clear)
         pinButton = findViewById(R.id.og_event_box_pin)
+        resizeButton = findViewById(R.id.og_event_box_resize)
         minimizeButton = findViewById(R.id.og_event_box_minimize)
         scrollView = findViewById(R.id.og_event_box_scroll)
+        contentContainer = findViewById(R.id.og_event_box_content_container)
+        resizeHandle = findViewById(R.id.og_event_box_resize_handle)
+        resizeHandleBar = findViewById(R.id.og_event_box_resize_handle_bar)
+        resizeHandleBar.alpha = 0.75f
+        resizeHandleBar.backgroundTintList = ColorStateList.valueOf(indexColor)
         listContainer = findViewById(R.id.og_event_box_list)
         emptyView = findViewById(R.id.og_event_box_empty)
         bubble = findViewById(R.id.og_event_box_bubble)
@@ -123,9 +147,15 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         bubbleBadge = findViewById(R.id.og_event_box_bubble_badge)
 
         clearButton.setOnClickListener {
+            expandedEventIndex = null
             viewModel.clearEvents()
             scheduleAutoShrink()
         }
+        resizeButton.setOnClickListener {
+            blinkResizeHandle()
+            scheduleAutoShrink()
+        }
+        resizeHandle.setOnTouchListener(ResizeTouchListener())
         minimizeButton.setOnClickListener { collapse(animate = true) }
         headerIcon.setOnClickListener { collapse(animate = true) }
         headerIcon.contentDescription = context.getString(R.string.og_event_box_minimize)
@@ -138,6 +168,7 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         bubble.setOnTouchListener(DragTouchListener(fromBubble = true))
         bubble.setOnClickListener { expand(animate = true) }
 
+        updateResizingState()
         applyLogo()
         updatePinButton()
         applyCollapsedState(viewModel.isCollapsed)
@@ -226,6 +257,8 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         removeCallbacks(autoShrinkRunnable)
         removeCallbacks(bubbleFadeRunnable)
         settleAnimator?.cancel()
+        blinkAnimator?.cancel()
+        handleHighlightAnimator?.cancel()
         scope?.cancel()
         scope = null
         super.onDetachedFromWindow()
@@ -235,6 +268,8 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         removeCallbacks(autoShrinkRunnable)
         removeCallbacks(bubbleFadeRunnable)
         settleAnimator?.cancel()
+        blinkAnimator?.cancel()
+        handleHighlightAnimator?.cancel()
         removeCloseTargetWindow()
         closeTargetShown = false
     }
@@ -253,6 +288,10 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         countView.text = String.format(Locale.US, "%d", events.size)
         emptyView.isVisible = events.isEmpty()
 
+        if (expandedEventIndex != null && events.none { it.index == expandedEventIndex }) {
+            expandedEventIndex = null
+        }
+
         while (listContainer.childCount > events.size) {
             listContainer.removeViewAt(listContainer.childCount - 1)
         }
@@ -260,7 +299,7 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
             listContainer.addView(createRow())
         }
         events.forEachIndexed { position, event ->
-            bindRow(listContainer.getChildAt(position) as TextView, event, isLatest = position == events.lastIndex)
+            bindRow(listContainer.getChildAt(position), event, isLatest = position == events.lastIndex)
         }
 
         if (viewModel.isCollapsed) {
@@ -271,20 +310,48 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         }
     }
 
-    private fun createRow(): TextView = TextView(context).apply {
-        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-        setPadding(0, rowSpacing, 0, rowSpacing)
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-        setTextColor(nameColor)
-        typeface = Typeface.MONOSPACE
-        maxLines = 2
+    private class RowViewHolder(
+        val root: View,
+        val header: View,
+        val text: TextView,
+        val warningIcon: ImageView,
+        val details: View,
+        val warningTitle: TextView,
+        val warningEventName: TextView,
+        val warningMessage: TextView,
+        val divider: View,
+    ) {
+        var eventIndex: Int = -1
+        var bindKey: String? = null
     }
 
-    private fun bindRow(row: TextView, event: OGEventBoxDebugEvent, isLatest: Boolean) {
-        val key = "${event.index}|$isLatest"
-        if (row.tag == key) return
-        row.tag = key
-        row.text = SpannableStringBuilder().apply {
+    private fun createRow(): View {
+        val view = LayoutInflater.from(context).inflate(R.layout.og_event_box_item, listContainer, false)
+        val holder = RowViewHolder(
+            root = view,
+            header = view.findViewById(R.id.og_event_box_item_header),
+            text = view.findViewById(R.id.og_event_box_item_text),
+            warningIcon = view.findViewById(R.id.og_event_box_item_warning),
+            details = view.findViewById(R.id.og_event_box_item_details),
+            warningTitle = view.findViewById(R.id.og_event_box_item_warning_title),
+            warningEventName = view.findViewById(R.id.og_event_box_item_warning_event_name),
+            warningMessage = view.findViewById(R.id.og_event_box_item_warning_message),
+            divider = view.findViewById(R.id.og_event_box_item_divider)
+        )
+        holder.header.setPadding(0, rowSpacing / 2, 0, rowSpacing / 2)
+        view.tag = holder
+        return view
+    }
+
+    private fun bindRow(rowView: View, event: OGEventBoxDebugEvent, isLatest: Boolean) {
+        val holder = rowView.tag as? RowViewHolder ?: return
+        val isExpanded = (expandedEventIndex == event.index)
+        val key = "${event.index}|$isLatest|${event.hasWarning}|$isExpanded"
+        holder.eventIndex = event.index
+        if (holder.bindKey == key) return
+        holder.bindKey = key
+
+        holder.text.text = SpannableStringBuilder().apply {
             val indexText = String.format(Locale.US, "%02d  ", event.index)
             append(indexText)
             setSpan(ForegroundColorSpan(indexColor), 0, indexText.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -295,6 +362,96 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
             append(event.name)
             setSpan(ForegroundColorSpan(if (isLatest) latestColor else nameColor), nameStart, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             if (isLatest) setSpan(StyleSpan(Typeface.BOLD), nameStart, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+
+        holder.divider.isVisible = !isLatest
+
+        holder.warningIcon.isVisible = event.hasWarning
+        if (event.hasWarning) {
+            holder.warningEventName.text = "Event: ${event.name}"
+            holder.warningMessage.text = event.warnings.joinToString("\n") { "• $it" }
+            holder.details.isVisible = isExpanded
+            holder.warningIcon.setOnClickListener {
+                handleWarningIconClicked(event, holder)
+            }
+        } else {
+            holder.details.isVisible = false
+            holder.warningIcon.setOnClickListener(null)
+        }
+    }
+
+    private fun handleWarningIconClicked(event: OGEventBoxDebugEvent, holder: RowViewHolder) {
+        scheduleAutoShrink()
+        if (expandedEventIndex == event.index) {
+            expandedEventIndex = null
+            holder.bindKey = null
+            val collapseTransition = AutoTransition().apply {
+                duration = 200
+                interpolator = AccelerateDecelerateInterpolator()
+            }
+            TransitionManager.beginDelayedTransition(listContainer, collapseTransition)
+            holder.details.visibility = View.GONE
+        } else {
+            val prevIndex = expandedEventIndex
+            expandedEventIndex = event.index
+            holder.bindKey = null
+
+            val prevRow = if (prevIndex != null) findRowByEventIndex(prevIndex) else null
+            val prevHolder = prevRow?.tag as? RowViewHolder
+            val prevDetails = prevHolder?.details
+
+            if (prevDetails != null && prevDetails.visibility == View.VISIBLE) {
+                prevHolder.bindKey = null
+                val collapseTransition = AutoTransition().apply {
+                    duration = 180
+                    interpolator = AccelerateDecelerateInterpolator()
+                    addListener(object : Transition.TransitionListener {
+                        override fun onTransitionEnd(transition: Transition) {
+                            if (expandedEventIndex == event.index) {
+                                val expandTransition = AutoTransition().apply {
+                                    duration = 200
+                                    interpolator = AccelerateDecelerateInterpolator()
+                                }
+                                TransitionManager.beginDelayedTransition(listContainer, expandTransition)
+                                holder.details.visibility = View.VISIBLE
+                                scrollToRow(holder.root)
+                            }
+                        }
+                        override fun onTransitionStart(transition: Transition) {}
+                        override fun onTransitionCancel(transition: Transition) {}
+                        override fun onTransitionPause(transition: Transition) {}
+                        override fun onTransitionResume(transition: Transition) {}
+                    })
+                }
+                TransitionManager.beginDelayedTransition(listContainer, collapseTransition)
+                prevDetails.visibility = View.GONE
+            } else {
+                val expandTransition = AutoTransition().apply {
+                    duration = 200
+                    interpolator = AccelerateDecelerateInterpolator()
+                }
+                TransitionManager.beginDelayedTransition(listContainer, expandTransition)
+                holder.details.visibility = View.VISIBLE
+                scrollToRow(holder.root)
+            }
+        }
+    }
+
+    private fun findRowByEventIndex(index: Int): View? {
+        for (i in 0 until listContainer.childCount) {
+            val child = listContainer.getChildAt(i)
+            val h = child.tag as? RowViewHolder
+            if (h?.eventIndex == index) return child
+        }
+        return null
+    }
+
+    private fun scrollToRow(view: View) {
+        scrollView.post {
+            val rect = Rect()
+            view.getDrawingRect(rect)
+            scrollView.offsetDescendantRectToMyCoords(view, rect)
+            scrollView.smoothScrollTo(0, rect.top)
         }
     }
 
@@ -363,6 +520,12 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         if (panelWidth > 0 && panel.layoutParams.width != panelWidth) {
             panel.layoutParams = panel.layoutParams.apply { width = panelWidth }
         }
+        if (!collapsed && OGEventBoxLog.isPanelResizingEnabled()) {
+            val custom = viewModel.customPanelHeight
+            if (custom != null && custom > 0 && contentContainer.layoutParams.height != custom) {
+                contentContainer.layoutParams.height = custom
+            }
+        }
         panel.isVisible = !collapsed
         bubble.isVisible = collapsed
         panel.alpha = 1f
@@ -397,6 +560,93 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         pinButton.contentDescription = context.getString(
             if (pinned) R.string.og_event_box_auto_shrink_off else R.string.og_event_box_auto_shrink_on
         )
+    }
+
+    fun updateResizingState() {
+        val enabled = OGEventBoxLog.isPanelResizingEnabled()
+        resizeButton.isVisible = enabled
+        resizeHandle.isVisible = enabled
+        if (!enabled) {
+            setHandleHighlighted(false, animate = false)
+            contentContainer.layoutParams.height = resources.getDimensionPixelSize(R.dimen.og_event_box_list_height)
+            contentContainer.requestLayout()
+            viewModel.customPanelHeight = null
+        }
+    }
+
+    private fun setHandleHighlighted(highlighted: Boolean, animate: Boolean = true) {
+        if (isHandleHighlighted == highlighted) return
+        isHandleHighlighted = highlighted
+
+        handleHighlightAnimator?.cancel()
+        resizeHandleBar.animate().cancel()
+
+        val targetScaleX = if (highlighted) 1.55f else 1.0f
+        val targetScaleY = if (highlighted) 1.25f else 1.0f
+        val targetAlpha = if (highlighted) 1.0f else 0.75f
+        val targetColor = if (highlighted) {
+            OGEventBoxLog.bubbleBackgroundColor.takeIf { it != 0 }
+                ?: ContextCompat.getColor(context, R.color.og_event_box_name_latest)
+        } else {
+            indexColor
+        }
+
+        if (!animate) {
+            resizeHandleBar.scaleX = targetScaleX
+            resizeHandleBar.scaleY = targetScaleY
+            resizeHandleBar.alpha = targetAlpha
+            resizeHandleBar.backgroundTintList = ColorStateList.valueOf(targetColor)
+            return
+        }
+
+        resizeHandleBar.animate()
+            .scaleX(targetScaleX)
+            .scaleY(targetScaleY)
+            .alpha(targetAlpha)
+            .setDuration(160L)
+            .setInterpolator(DecelerateInterpolator())
+            .start()
+
+        val startColor = resizeHandleBar.backgroundTintList?.defaultColor ?: indexColor
+        handleHighlightAnimator = ValueAnimator.ofObject(ArgbEvaluator(), startColor, targetColor).apply {
+            duration = 160L
+            addUpdateListener { animator ->
+                val color = animator.animatedValue as Int
+                resizeHandleBar.backgroundTintList = ColorStateList.valueOf(color)
+            }
+            start()
+        }
+    }
+
+    private fun blinkResizeHandle() {
+        blinkAnimator?.cancel()
+        handleHighlightAnimator?.cancel()
+        resizeHandleBar.animate().cancel()
+        isHandleHighlighted = false
+
+        val highlightColor = OGEventBoxLog.bubbleBackgroundColor.takeIf { it != 0 }
+            ?: ContextCompat.getColor(context, R.color.og_event_box_name_latest)
+        resizeHandleBar.backgroundTintList = ColorStateList.valueOf(highlightColor)
+
+        // Two complete blinks: 1f -> 0.15f -> 1f -> 0.15f -> 0.75f
+        val alphaAnim = ObjectAnimator.ofFloat(resizeHandleBar, View.ALPHA, 1f, 0.15f, 1f, 0.15f, 0.75f)
+        val scaleXAnim = ObjectAnimator.ofFloat(resizeHandleBar, View.SCALE_X, 1.4f, 1f, 1.4f, 1f, 1.0f)
+        val scaleYAnim = ObjectAnimator.ofFloat(resizeHandleBar, View.SCALE_Y, 1.25f, 1f, 1.25f, 1f, 1.0f)
+
+        blinkAnimator = AnimatorSet().apply {
+            playTogether(alphaAnim, scaleXAnim, scaleYAnim)
+            duration = 750L
+            interpolator = AccelerateDecelerateInterpolator()
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    setHandleHighlighted(false, animate = false)
+                }
+                override fun onAnimationCancel(animation: Animator) {
+                    setHandleHighlighted(false, animate = false)
+                }
+            })
+            start()
+        }
     }
 
     private inner class DragTouchListener(private val fromBubble: Boolean) : OnTouchListener {
@@ -467,6 +717,63 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
                         if (fromBubble) highlightBubble(scheduleFade = true)
                     }
                     return true
+                }
+            }
+            return false
+        }
+    }
+
+    private inner class ResizeTouchListener : OnTouchListener {
+        private var downRawY = 0f
+        private var initialHeight = 0
+        private var isResizing = false
+
+        override fun onTouch(view: View, event: MotionEvent): Boolean {
+            if (!OGEventBoxLog.isPanelResizingEnabled()) return false
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    view.parent?.requestDisallowInterceptTouchEvent(true)
+                    downRawY = event.rawY
+                    initialHeight = contentContainer.height.takeIf { it > 0 }
+                        ?: contentContainer.measuredHeight.takeIf { it > 0 }
+                        ?: resources.getDimensionPixelSize(R.dimen.og_event_box_list_height)
+                    isResizing = true
+                    removeCallbacks(autoShrinkRunnable)
+                    return true
+                }
+
+                MotionEvent.ACTION_MOVE -> {
+                    if (!isResizing) return false
+                    val dy = (event.rawY - downRawY).roundToInt()
+                    val minHeight = resources.getDimensionPixelSize(R.dimen.og_event_box_min_list_height)
+                    val insets = systemBarInsets()
+                    val otherHeight = height - contentContainer.height
+                    val maxAvailableBelow = screenHeight() - insets.bottom - positionY().toInt() - otherHeight
+                    val maxScreenHeight = (screenHeight() * 0.85f).roundToInt()
+                    val maxHeight = max(minHeight, min(maxScreenHeight, maxAvailableBelow))
+
+                    val targetHeight = (initialHeight + dy).coerceIn(minHeight, maxHeight)
+                    if (contentContainer.layoutParams.height != targetHeight) {
+                        contentContainer.layoutParams.height = targetHeight
+                        contentContainer.requestLayout()
+                        viewModel.customPanelHeight = targetHeight
+                    }
+
+                    // Slightly increase width and highlight clearly when dragging to increase panel height
+                    val isIncreasingHeight = dy > 0
+                    setHandleHighlighted(isIncreasingHeight)
+
+                    return true
+                }
+
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    if (isResizing) {
+                        isResizing = false
+                        setHandleHighlighted(false)
+                        view.parent?.requestDisallowInterceptTouchEvent(false)
+                        scheduleAutoShrink()
+                        return true
+                    }
                 }
             }
             return false

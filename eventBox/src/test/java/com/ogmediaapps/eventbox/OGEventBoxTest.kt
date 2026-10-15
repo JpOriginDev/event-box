@@ -81,5 +81,104 @@ class OGEventBoxTest {
         // Reset
         OGEventBoxLog.setDebugModeEnabled(false).setDebugModeDurationHours(0.5)
     }
+
+    @Test
+    fun testValidEventValidation() {
+        val warnings = com.ogmediaapps.eventbox.validator.OGEventBoxValidator.validateEvent(
+            "valid_purchase_event",
+            mapOf("item_id" to "sku_123", "price" to 19.99)
+        )
+        assertTrue(warnings.isEmpty())
+    }
+
+    @Test
+    fun testEventNameLengthLimit() {
+        val longName = "this_is_an_extremely_long_event_name_that_exceeds_forty_characters"
+        val warnings = com.ogmediaapps.eventbox.validator.OGEventBoxValidator.validateEvent(longName)
+        assertTrue(warnings.any { it.contains("exceeds max limit of 40") })
+    }
+
+    @Test
+    fun testEventNameCharactersLimit() {
+        val invalidName = "invalid-name with spaces!"
+        val warnings = com.ogmediaapps.eventbox.validator.OGEventBoxValidator.validateEvent(invalidName)
+        assertTrue(warnings.any { it.contains("invalid characters") })
+    }
+
+    @Test
+    fun testParametersPerEventLimit() {
+        val heavyParams = mutableMapOf<String, Any?>()
+        for (i in 1..28) {
+            heavyParams["param_$i"] = "val_$i"
+        }
+        val warnings = com.ogmediaapps.eventbox.validator.OGEventBoxValidator.validateEvent("heavy_event", heavyParams)
+        assertTrue(warnings.any { it.contains("max 25 unique parameters") })
+    }
+
+    @Test
+    fun testParameterNameAndValueLengthLimit() {
+        val longParamName = "parameter_name_that_is_so_long_that_it_exceeds_forty_characters_limit"
+        val longParamValue = "V".repeat(120)
+        val warnings = com.ogmediaapps.eventbox.validator.OGEventBoxValidator.validateEvent(
+            "param_test_event",
+            mapOf(longParamName to longParamValue)
+        )
+        assertTrue(warnings.any { it.contains("exceeds max limit of 40") })
+        assertTrue(warnings.any { it.contains("exceeds max limit of 100") })
+    }
+
+    @Test
+    fun testUserPropertyLimits() {
+        val longPropName = "user_property_name_too_long" // 27 chars > 24
+        val longPropValue = "V".repeat(40) // 40 chars > 36
+        val warnings = com.ogmediaapps.eventbox.validator.OGEventBoxValidator.validateUserProperty(
+            longPropName,
+            longPropValue
+        )
+        assertTrue(warnings.any { it.contains("exceeds max limit of 24") })
+        assertTrue(warnings.any { it.contains("exceeds max limit of 36") })
+    }
+
+    @Test
+    fun testDistinctCustomEventsLimit() {
+        com.ogmediaapps.eventbox.validator.OGEventBoxValidator.reset()
+        for (i in 1..500) {
+            com.ogmediaapps.eventbox.validator.OGEventBoxValidator.validateEvent("custom_event_$i")
+        }
+        // 501st event should trigger warning
+        val warnings = com.ogmediaapps.eventbox.validator.OGEventBoxValidator.validateEvent("custom_event_501")
+        assertTrue(warnings.any { it.contains("max 500 custom event types") })
+
+        com.ogmediaapps.eventbox.validator.OGEventBoxValidator.reset()
+        assertEquals(0, com.ogmediaapps.eventbox.validator.OGEventBoxValidator.getDistinctCustomEventsCount())
+    }
+
+    @Test
+    fun testFirebaseChecksEnabledOption() {
+        OGEventBoxLog.setFirebaseChecksEnabled(true)
+        assertTrue(OGEventBoxLog.isFirebaseChecksEnabled())
+
+        OGEventBoxLog.setFirebaseChecksEnabled(false)
+        assertFalse(OGEventBoxLog.isFirebaseChecksEnabled())
+
+        // Reset
+        OGEventBoxLog.setFirebaseChecksEnabled(true)
+        assertTrue(OGEventBoxLog.isFirebaseChecksEnabled())
+    }
+
+    @Test
+    fun testPanelResizingEnabledOption() {
+        OGEventBoxLog.setPanelResizingEnabled(true)
+        assertTrue(OGEventBoxLog.isPanelResizingEnabled())
+        assertTrue(OGEventBoxLog.panelResizingEnabled)
+
+        OGEventBoxLog.setPanelResizingEnabled(false)
+        assertFalse(OGEventBoxLog.isPanelResizingEnabled())
+        assertFalse(OGEventBoxLog.panelResizingEnabled)
+
+        // Reset
+        OGEventBoxLog.setPanelResizingEnabled(true)
+        assertTrue(OGEventBoxLog.isPanelResizingEnabled())
+    }
 }
 

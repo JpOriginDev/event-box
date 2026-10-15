@@ -32,6 +32,12 @@ internal object OGEventBoxRepository {
     var debugModeDurationHours = 0.5
 
     @Volatile
+    var firebaseChecksEnabled = true
+
+    @Volatile
+    var panelResizingEnabled = true
+
+    @Volatile
     private var appContext: Context? = null
 
     private var nextIndex = 1
@@ -95,13 +101,56 @@ internal object OGEventBoxRepository {
         return if (remaining <= 0) 0 else ((remaining + 59_999) / 60_000).toInt()
     }
 
-    fun log(name: String) {
+    fun log(name: String, params: Map<String, Any?>? = null) {
         if (!isActive || name.isBlank()) return
+        val warnings = if (firebaseChecksEnabled) {
+            com.ogmediaapps.eventbox.validator.OGEventBoxValidator.validateEvent(name, params)
+        } else {
+            emptyList()
+        }
         synchronized(lock) {
             val event = OGEventBoxDebugEvent(
                 index = nextIndex++,
                 timestampMillis = System.currentTimeMillis(),
-                name = name
+                name = name,
+                params = params,
+                warnings = warnings
+            )
+            _events.value = (_events.value + event).takeLast(MAX_EVENTS)
+        }
+    }
+
+    fun log(name: String, bundle: android.os.Bundle?) {
+        val paramsMap = bundle?.let { b ->
+            val map = mutableMapOf<String, Any?>()
+            try {
+                for (key in b.keySet()) {
+                    @Suppress("DEPRECATION")
+                    map[key] = b.get(key)
+                }
+            } catch (_: Throwable) {
+                // Safely handle unmocked environments
+            }
+            map
+        }
+        log(name, paramsMap)
+    }
+
+    fun setUserProperty(name: String, value: String?) {
+        if (!isActive || name.isBlank()) return
+        val warnings = if (firebaseChecksEnabled) {
+            com.ogmediaapps.eventbox.validator.OGEventBoxValidator.validateUserProperty(name, value)
+        } else {
+            emptyList()
+        }
+        val params = mapOf("property_name" to name, "property_value" to (value ?: "null"))
+        synchronized(lock) {
+            val event = OGEventBoxDebugEvent(
+                index = nextIndex++,
+                timestampMillis = System.currentTimeMillis(),
+                name = "user_property: $name",
+                params = params,
+                warnings = warnings
             )
             _events.value = (_events.value + event).takeLast(MAX_EVENTS)
         }
@@ -111,6 +160,7 @@ internal object OGEventBoxRepository {
         synchronized(lock) {
             nextIndex = 1
             _events.value = emptyList()
+            com.ogmediaapps.eventbox.validator.OGEventBoxValidator.reset()
         }
     }
 

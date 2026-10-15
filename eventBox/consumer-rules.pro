@@ -7,3 +7,6 @@
 -keep public class com.ogmediaapps.eventbox.model.OGEventBoxDebugEvent {
     public *;
 }
+-keep public class com.ogmediaapps.eventbox.validator.OGEventBoxValidator {
+    public *;
+}

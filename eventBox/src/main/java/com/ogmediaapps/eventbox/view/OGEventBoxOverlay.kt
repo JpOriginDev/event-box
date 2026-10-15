@@ -55,10 +55,23 @@ internal object OGEventBoxOverlay : Application.ActivityLifecycleCallbacks {
 
     /** Attaches or removes the box so it matches [OGEventBoxRepository.isActive]. Safe from any thread. */
     fun sync() {
-        if (Looper.myLooper() == Looper.getMainLooper()) {
-            if (OGEventBoxRepository.isActive) attach() else detach()
-        } else {
-            mainHandler.post { if (OGEventBoxRepository.isActive) attach() else detach() }
+        runCatching {
+            if (Looper.myLooper() == Looper.getMainLooper()) {
+                if (OGEventBoxRepository.isActive) attach() else detach()
+            } else {
+                mainHandler.post { if (OGEventBoxRepository.isActive) attach() else detach() }
+            }
+        }
+    }
+
+    /** Updates the resizing controls in the active view, if attached. Safe from any thread. */
+    fun updateResizingState() {
+        runCatching {
+            if (Looper.myLooper() == Looper.getMainLooper()) {
+                view?.updateResizingState()
+            } else {
+                mainHandler.post { view?.updateResizingState() }
+            }
         }
     }
 

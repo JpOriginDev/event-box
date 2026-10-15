@@ -93,6 +93,49 @@ object OGEventBoxLog {
         OGEventBoxRepository.updateDebugModeDurationHours(context, durationHours)
     }
 
+    @get:JvmStatic
+    @set:JvmSynthetic
+    var firebaseChecksEnabled: Boolean
+        get() = OGEventBoxRepository.firebaseChecksEnabled
+        set(value) { OGEventBoxRepository.firebaseChecksEnabled = value }
+
+    /**
+     * True if Firebase analytics limits checks and warnings are enabled.
+     */
+    @JvmStatic
+    fun isFirebaseChecksEnabled(): Boolean = OGEventBoxRepository.firebaseChecksEnabled
+
+    /**
+     * Fluent setter to enable or disable Firebase analytics limits checks and warnings.
+     */
+    @JvmStatic
+    fun setFirebaseChecksEnabled(enabled: Boolean): OGEventBoxLog = apply {
+        this.firebaseChecksEnabled = enabled
+    }
+
+    @get:JvmStatic
+    @set:JvmSynthetic
+    var panelResizingEnabled: Boolean
+        get() = OGEventBoxRepository.panelResizingEnabled
+        set(value) {
+            OGEventBoxRepository.panelResizingEnabled = value
+            OGEventBoxOverlay.updateResizingState()
+        }
+
+    /**
+     * True if panel height resizing is enabled.
+     */
+    @JvmStatic
+    fun isPanelResizingEnabled(): Boolean = OGEventBoxRepository.panelResizingEnabled
+
+    /**
+     * Fluent setter to enable or disable panel height resizing.
+     */
+    @JvmStatic
+    fun setPanelResizingEnabled(enabled: Boolean): OGEventBoxLog = apply {
+        this.panelResizingEnabled = enabled
+    }
+
     // =========================================================================
     // 4. Session State & Activation Controls
     // =========================================================================
@@ -150,7 +193,31 @@ object OGEventBoxLog {
      */
     @JvmStatic
     fun log(name: String) {
-        OGEventBoxRepository.log(name)
+        OGEventBoxRepository.log(name, null as Map<String, Any?>?)
+    }
+
+    /**
+     * Logs an event with a bundle of parameters into the OGEventBox log.
+     */
+    @JvmStatic
+    fun log(name: String, bundle: android.os.Bundle?) {
+        OGEventBoxRepository.log(name, bundle)
+    }
+
+    /**
+     * Logs an event with a parameters map into the OGEventBox log.
+     */
+    @JvmStatic
+    fun log(name: String, params: Map<String, Any?>?) {
+        OGEventBoxRepository.log(name, params)
+    }
+
+    /**
+     * Records a user property into the OGEventBox log and validates against Firebase limits.
+     */
+    @JvmStatic
+    fun setUserProperty(name: String, value: String?) {
+        OGEventBoxRepository.setUserProperty(name, value)
     }
 
     /**

@@ -24,6 +24,7 @@ internal class OGEventBoxViewModel(    private val repository: OGEventBoxReposit
     val isPinned: Boolean get() = _isPinned
 
     var lastSeenIndex: Int = 0
+    var customPanelHeight: Int? = null
 
     private val _uiState = MutableStateFlow(OGEventBoxUiState())
     val uiState: StateFlow<OGEventBoxUiState> = _uiState.asStateFlow()
@@ -38,6 +39,7 @@ internal class OGEventBoxViewModel(    private val repository: OGEventBoxReposit
         _isCollapsed = true
         _isPinned = false
         lastSeenIndex = 0
+        customPanelHeight = null
         updateUiState()
     }
 

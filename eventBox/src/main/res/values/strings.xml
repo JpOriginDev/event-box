@@ -10,4 +10,7 @@
     <string name="og_event_box_auto_shrink_on">Keep the event log open</string>
     <string name="og_event_box_auto_shrink_off">Let the event log shrink again</string>
     <string name="og_event_box_close">Close the event log</string>
+    <string name="og_event_box_warning_description">Warning details</string>
+    <string name="og_event_box_warning_title">⚠ Firebase Limits Warning</string>
+    <string name="og_event_box_resize">Resize panel height</string>
 </resources>

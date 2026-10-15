@@ -64,13 +64,88 @@ comes back if the app is closed and reopened during the session.
 
 ## 4. Log your events
 
+**Kotlin**
 ```kotlin
+// Simple event
 OGEventBoxLog.log("user_signed_in")
+
+// Event with Bundle parameters (Firebase Analytics style)
+val bundle = Bundle().apply {
+    putString("item_id", "sku_101")
+    putDouble("price", 29.99)
+}
+OGEventBoxLog.log("purchase", bundle)
+
+// Event with Map parameters
+OGEventBoxLog.log("item_selected", mapOf("item_name" to "Sneakers"))
+
+// User property
+OGEventBoxLog.setUserProperty("user_tier", "premium")
 ```
 
-Java: `OGEventBoxLog.log("user_signed_in");`
+**Java**
+```java
+// Simple event
+OGEventBoxLog.log("user_signed_in");
+
+// Event with Bundle parameters
+Bundle bundle = new Bundle();
+bundle.putString("item_id", "sku_101");
+OGEventBoxLog.log("purchase", bundle);
+
+// Event with Map parameters
+Map<String, Object> params = new HashMap<>();
+params.put("item_name", "Sneakers");
+OGEventBoxLog.log("item_selected", params);
+
+// User property
+OGEventBoxLog.setUserProperty("user_tier", "premium");
+```
 
 Log each event once. Calls are ignored while the box is off.
+
+### Firebase Limits & Validation Warnings
+
+EventBox automatically checks each logged event against Firebase Analytics rules:
+1. **Distinct Event Names**: Up to 500 distinct custom event types per app.
+2. **Event Name Length**: Max 40 characters (alphanumeric and underscores).
+3. **Parameters Per Event**: Max 25 unique parameters per event.
+4. **Parameter Name Length**: Max 40 characters (alphanumeric and underscores).
+5. **Parameter Value Length**: Max 100 characters (Standard GA).
+6. **User Properties**: Max 25 per app (names ≤ 24 chars, values ≤ 36 chars).
+7. **Daily Event Volume**: Warns when approaching ~100,000 events/user/day throttle.
+
+If an event violates any condition, a warning icon (**⚠**) appears at the end of its item row. Tapping the warning icon smoothly expands the item to display the full event name and the exact limit violation reason. Clicking another warning icon smoothly collapses the currently open item before expanding the new one.
+
+#### Enabling or Disabling Firebase Checks
+
+By default, Firebase checks are enabled (`true`). You can disable or enable them anytime via fluent setter:
+
+**Kotlin**
+```kotlin
+OGEventBoxLog.setFirebaseChecksEnabled(false)
+```
+
+**Java**
+```java
+OGEventBoxLog.setFirebaseChecksEnabled(false);
+```
+
+#### Enabling or Disabling Panel Height Resizing
+
+By default, panel height resizing is enabled (`true`). When enabled, a resize icon appears in the header; tapping it blinks the bottom-edge handle twice to indicate where to drag. Users can drag the bottom handle up or down to adjust the panel height while keeping the width fixed.
+
+When resizing is disabled, the header resize icon and the bottom drag handle are hidden, preventing all panel resizing.
+
+**Kotlin**
+```kotlin
+OGEventBoxLog.setPanelResizingEnabled(false)
+```
+
+**Java**
+```java
+OGEventBoxLog.setPanelResizingEnabled(false);
+```
 
 ## Using the box
 
@@ -78,6 +153,8 @@ Log each event once. Calls are ignored while the box is off.
   when idle. The badge shows how many events arrived since you last opened the panel.
 - **Panel**: shows `number  time  event_name`, newest at the bottom. It shrinks back to the bubble
   after 6 seconds without touch.
+    - **Resize icon**: tap to blink the bottom-edge drag handle twice to guide where to drag.
+    - **Warning icon**: tap to smoothly expand/collapse Firebase limit warnings.
     - **Pin**: stops it from auto-shrinking.
     - **Minimize** (or tap the logo): shrinks it now.
     - **CLEAR**: empties the log.
@@ -104,6 +181,8 @@ OGEventBoxLog.setBubbleIconResId(R.mipmap.my_logo)
 
 | Call | What it does |
 |---|---|
+| `OGEventBoxLog.setFirebaseChecksEnabled(enabled)` | Enables or disables Firebase limits checks |
+| `OGEventBoxLog.setPanelResizingEnabled(enabled)` | Enables or disables panel height resizing |
 | `OGEventBoxLog.disable()` | Ends the session now |
 | `OGEventBoxLog.updateDebugModeDurationHours(context, 1.0)` | Changes the session length |
 | `OGEventBoxLog.isActive` | Is the box on? (`Boolean`) |
