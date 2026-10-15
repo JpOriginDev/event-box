@@ -46,6 +46,7 @@
                 android:tint="@color/og_event_box_on_accent" />
 
             <TextView
+                android:id="@+id/og_event_box_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="10dp"
@@ -72,6 +73,7 @@
                 android:textSize="12sp" />
 
             <Space
+                android:id="@+id/og_event_box_spacer"
                 android:layout_width="0dp"
                 android:layout_height="1dp"
                 android:layout_weight="1" />

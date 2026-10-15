@@ -73,8 +73,11 @@ import kotlin.math.roundToInt
 internal class OGEventBoxView(context: Context, private val viewModel: OGEventBoxViewModel) : FrameLayout(context) {
 
     private val panel: LinearLayout
-    private val header: View
+    private val header: LinearLayout
+    private val headerIcon: ImageView
+    private val titleView: TextView
     private val countView: TextView
+    private val headerSpacer: View
     private val clearButton: TextView
     private val pinButton: ImageButton
     private val resizeButton: ImageButton
@@ -86,7 +89,6 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
     private val listContainer: LinearLayout
     private val emptyView: TextView
     private val bubble: View
-    private val headerIcon: ImageView
     private val bubbleIcon: ImageView
     private val bubbleBadge: TextView
 
@@ -116,6 +118,7 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
     private var blinkAnimator: AnimatorSet? = null
     private var handleHighlightAnimator: ValueAnimator? = null
     private var isHandleHighlighted = false
+    private var isHeaderMirrored: Boolean? = null
     private var expandedEventIndex: Int? = null
 
     private var scope: CoroutineScope? = null
@@ -129,7 +132,9 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         panel = findViewById(R.id.og_event_box_panel)
         header = findViewById(R.id.og_event_box_header)
         headerIcon = findViewById(R.id.og_event_box_header_icon)
+        titleView = findViewById(R.id.og_event_box_title)
         countView = findViewById(R.id.og_event_box_count)
+        headerSpacer = findViewById(R.id.og_event_box_spacer)
         clearButton = findViewById(R.id.og_event_box_clear)
         pinButton = findViewById(R.id.og_event_box_pin)
         resizeButton = findViewById(R.id.og_event_box_resize)
@@ -168,6 +173,7 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         bubble.setOnTouchListener(DragTouchListener(fromBubble = true))
         bubble.setOnClickListener { expand(animate = true) }
 
+        applyHeaderOrientation(isBubbleOnRightSide())
         updateResizingState()
         applyLogo()
         updatePinButton()
@@ -281,7 +287,7 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        if (!dragInProgress) applyPosition()
+        if (!dragInProgress && settleAnimator?.isRunning != true) applyPosition()
     }
 
     private fun renderEvents(events: List<OGEventBoxDebugEvent>) {
@@ -475,41 +481,281 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         }
     }
 
+    private fun isBubbleOnRightSide(): Boolean {
+        if (!viewModel.anchorX.isNaN()) {
+            return viewModel.anchorX > screenWidth() / 2f
+        }
+        if (viewModel.isCollapsed && positionX() > 0f) {
+            return (positionX() + width / 2f) > screenWidth() / 2f
+        }
+        val saved = viewModel.getSavedPosition(context)
+        return saved?.onRightEdge ?: DEFAULT_ON_RIGHT_EDGE
+    }
+
+    private fun applyHeaderOrientation(isRightSide: Boolean) {
+        val bubbleLp = bubble.layoutParams as? LayoutParams
+        val targetBubbleGravity = Gravity.TOP or (if (isRightSide) Gravity.END else Gravity.START)
+        if (bubbleLp != null && bubbleLp.gravity != targetBubbleGravity) {
+            bubbleLp.gravity = targetBubbleGravity
+            bubble.layoutParams = bubbleLp
+        }
+
+        if (isHeaderMirrored == isRightSide) return
+        isHeaderMirrored = isRightSide
+
+        header.removeAllViews()
+        val density = resources.displayMetrics.density
+        fun dp(value: Float): Int = (value * density).roundToInt()
+
+        if (isRightSide) {
+            // Mirrored layout for right-side bubble:
+            // [Clear] [Minimize] [Resize] [Pin] ---Spacer--- [Title] [Count] [Logo]
+            val clearLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                dp(32f)
+            ).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                marginStart = 0
+            }
+            val minLp = LinearLayout.LayoutParams(dp(32f), dp(32f)).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                marginStart = dp(6f)
+            }
+            val resizeLp = LinearLayout.LayoutParams(dp(32f), dp(32f)).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                marginStart = dp(4f)
+            }
+            val pinLp = LinearLayout.LayoutParams(dp(32f), dp(32f)).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                marginStart = dp(4f)
+            }
+            val spacerLp = LinearLayout.LayoutParams(0, dp(1f), 1f).apply {
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            val titleLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                marginStart = 0
+            }
+            val countLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                marginStart = dp(8f)
+            }
+            val iconLp = LinearLayout.LayoutParams(dp(34f), dp(34f)).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                marginStart = dp(10f)
+            }
+
+            header.addView(clearButton, clearLp)
+            header.addView(minimizeButton, minLp)
+            header.addView(resizeButton, resizeLp)
+            header.addView(pinButton, pinLp)
+            header.addView(headerSpacer, spacerLp)
+            header.addView(titleView, titleLp)
+            header.addView(countView, countLp)
+            header.addView(headerIcon, iconLp)
+        } else {
+            // Standard layout for left-side bubble:
+            // [Logo] [Title] [Count] ---Spacer--- [Pin] [Resize] [Minimize] [Clear]
+            val iconLp = LinearLayout.LayoutParams(dp(34f), dp(34f)).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                marginStart = 0
+            }
+            val titleLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                marginStart = dp(10f)
+            }
+            val countLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                marginStart = dp(8f)
+            }
+            val spacerLp = LinearLayout.LayoutParams(0, dp(1f), 1f).apply {
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            val pinLp = LinearLayout.LayoutParams(dp(32f), dp(32f)).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                marginStart = 0
+            }
+            val resizeLp = LinearLayout.LayoutParams(dp(32f), dp(32f)).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                marginStart = dp(4f)
+            }
+            val minLp = LinearLayout.LayoutParams(dp(32f), dp(32f)).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                marginStart = dp(4f)
+            }
+            val clearLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                dp(32f)
+            ).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                marginStart = dp(6f)
+            }
+
+            header.addView(headerIcon, iconLp)
+            header.addView(titleView, titleLp)
+            header.addView(countView, countLp)
+            header.addView(headerSpacer, spacerLp)
+            header.addView(pinButton, pinLp)
+            header.addView(resizeButton, resizeLp)
+            header.addView(minimizeButton, minLp)
+            header.addView(clearButton, clearLp)
+        }
+
+        resizeButton.isVisible = OGEventBoxLog.isPanelResizingEnabled()
+    }
+
     private fun collapse(animate: Boolean) {
         if (viewModel.isCollapsed) return
         viewModel.collapse()
         removeCallbacks(autoShrinkRunnable)
-        applyCollapsedState(collapsed = true)
-        updateBadge(viewModel.events.value)
+
+        val isRight = isBubbleOnRightSide()
+        val panelWidth = (if (panel.width > 0) panel.width else (screenWidth() - marginPx * 2)).toFloat()
+        val pivotX = if (isRight) panelWidth - dpToPx(27f) else dpToPx(27f).toFloat()
+        val pivotY = dpToPx(27f).toFloat()
+        panel.pivotX = pivotX
+        panel.pivotY = pivotY
+
         if (animate) {
             panel.animate().cancel()
-            bubble.alpha = 0f
-            bubble.scaleX = 0.5f
-            bubble.scaleY = 0.5f
-            bubble.animate().alpha(1f).scaleX(1f).scaleY(1f)
-                .setDuration(ANIMATION_MS)
-                .setInterpolator(OvershootInterpolator(1.4f))
+            bubble.animate().cancel()
+            panel.animate()
+                .alpha(0f)
+                .scaleX(0.65f)
+                .scaleY(0.65f)
+                .setDuration(130L)
+                .setInterpolator(DecelerateInterpolator(1.5f))
+                .withEndAction {
+                    applyCollapsedState(collapsed = true)
+                    updateBadge(viewModel.events.value)
+                    if (isRight) {
+                        // The window shrinks and moves to the right edge; keep the bubble hidden
+                        // until that has been laid out, so it never shows mid-move (a slide).
+                        bubble.visibility = View.INVISIBLE
+                        applyBubbleRestingPosition(isRight)
+                        animateBubbleEntryWhenSettled()
+                    } else {
+                        applyBubbleRestingPosition(isRight)
+                        animateBubbleEntry()
+                    }
+                }
                 .start()
+        } else {
+            applyCollapsedState(collapsed = true)
+            updateBadge(viewModel.events.value)
+            applyBubbleRestingPosition(isRight)
         }
+    }
+
+    private fun animateBubbleEntryWhenSettled() {
+        var started = false
+        val listener = object : OnLayoutChangeListener {
+            override fun onLayoutChange(
+                v: View?, l: Int, t: Int, r: Int, b: Int, ol: Int, ot: Int, or: Int, ob: Int,
+            ) {
+                if (started) return
+                started = true
+                removeOnLayoutChangeListener(this)
+                postDelayed({ showBubbleAfterMove() }, 60L)
+            }
+        }
+        addOnLayoutChangeListener(listener)
+        postDelayed({
+            if (!started) {
+                started = true
+                removeOnLayoutChangeListener(listener)
+                showBubbleAfterMove()
+            }
+        }, 150L)
+    }
+
+    private fun showBubbleAfterMove() {
+        if (!viewModel.isCollapsed) return
+        bubble.alpha = 0f
+        bubble.visibility = View.VISIBLE
+        animateBubbleEntry()
+    }
+
+    private fun animateBubbleEntry() {
+        bubble.alpha = 0f
+        bubble.scaleX = 0.5f
+        bubble.scaleY = 0.5f
+        bubble.animate()
+            .alpha(1f)
+            .scaleX(1f)
+            .scaleY(1f)
+            .setDuration(ANIMATION_MS)
+            .setInterpolator(OvershootInterpolator(1.4f))
+            .start()
         highlightBubble(scheduleFade = true)
-        val resting = snapPosition(positionX(), positionY())
-        persistBubblePosition(resting.x, resting.y)
+    }
+
+    private fun bubbleTotalWidth(): Int =
+        resources.getDimensionPixelSize(R.dimen.og_event_box_bubble_size) + marginPx * 2
+
+    private fun bubbleTotalHeight(): Int =
+        resources.getDimensionPixelSize(R.dimen.og_event_box_bubble_size) + marginPx * 2
+
+    private fun applyBubbleRestingPosition(isRight: Boolean) {
+        val insets = systemBarInsets()
+        val totalWidth = bubbleTotalWidth()
+        val totalHeight = bubbleTotalHeight()
+        val leftX = insets.left.toFloat()
+        val rightX = (screenWidth() - insets.right - totalWidth).toFloat()
+        val restingX = if (isRight) max(leftX, rightX) else min(leftX, rightX)
+        val minY = insets.top.toFloat()
+        val maxY = (screenHeight() - insets.bottom - totalHeight).toFloat()
+        val clampedY = positionY().coerceIn(min(minY, maxY), max(minY, maxY))
+        viewModel.anchorX = restingX
+        viewModel.anchorY = clampedY
+        persistBubblePosition(restingX, clampedY)
+        moveTo(restingX, clampedY)
     }
 
     private fun expand(animate: Boolean) {
         if (!viewModel.isCollapsed) return
         viewModel.expand()
         removeCallbacks(bubbleFadeRunnable)
+
+        val isRight = isBubbleOnRightSide()
+        applyHeaderOrientation(isRight)
+
+        val insets = systemBarInsets()
+        moveTo(insets.left.toFloat(), positionY())
+
         applyCollapsedState(collapsed = false)
         renderEvents(viewModel.events.value)
+
+        val panelWidth = (if (panel.width > 0) panel.width else (screenWidth() - marginPx * 2)).toFloat()
+        val pivotX = if (isRight) panelWidth - dpToPx(27f) else dpToPx(27f).toFloat()
+        val pivotY = dpToPx(27f).toFloat()
+        panel.pivotX = pivotX
+        panel.pivotY = pivotY
+
         if (animate) {
             bubble.animate().cancel()
+            panel.animate().cancel()
             panel.alpha = 0f
-            panel.scaleX = 0.8f
-            panel.scaleY = 0.8f
-            panel.animate().alpha(1f).scaleX(1f).scaleY(1f)
-                .setDuration(ANIMATION_MS)
-                .setInterpolator(DecelerateInterpolator())
+            panel.scaleX = 0.65f
+            panel.scaleY = 0.65f
+            panel.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(180L)
+                .setInterpolator(DecelerateInterpolator(1.6f))
                 .start()
         }
         scheduleAutoShrink()
@@ -534,8 +780,16 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         bubble.alpha = 1f
         bubble.scaleX = 1f
         bubble.scaleY = 1f
-        panel.pivotX = 0f
-        panel.pivotY = 0f
+        val isRight = isBubbleOnRightSide()
+        val bubbleLp = bubble.layoutParams as? LayoutParams
+        val targetBubbleGravity = Gravity.TOP or (if (isRight) Gravity.END else Gravity.START)
+        if (bubbleLp != null && bubbleLp.gravity != targetBubbleGravity) {
+            bubbleLp.gravity = targetBubbleGravity
+            bubble.layoutParams = bubbleLp
+        }
+        val pw = if (panel.width > 0) panel.width else panelWidth
+        panel.pivotX = if (isRight) (pw - dpToPx(27f)).toFloat() else dpToPx(27f).toFloat()
+        panel.pivotY = dpToPx(27f).toFloat()
         requestLayout()
     }
 
@@ -781,14 +1035,21 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
     }
 
     private fun settle(fromBubble: Boolean) {
-        val resting = snapPosition(positionX(), positionY())
-        viewModel.anchorX = resting.x
-        viewModel.anchorY = resting.y
-        if (viewModel.isCollapsed) persistBubblePosition(resting.x, resting.y)
         if (fromBubble) {
+            val resting = snapPosition(positionX(), positionY())
+            val effectiveWidth = bubbleTotalWidth()
+            val onRight = (resting.x + effectiveWidth / 2f) > (screenWidth() / 2f)
+            viewModel.anchorX = resting.x
+            viewModel.anchorY = resting.y
+            persistBubblePosition(resting.x, resting.y)
+            applyHeaderOrientation(onRight)
             bubble.animate().scaleX(1f).scaleY(1f).setDuration(DRAG_ANIMATION_MS).start()
+            animateTo(resting.x, resting.y)
+        } else {
+            val clamped = clampPosition(positionX(), positionY())
+            viewModel.anchorY = clamped.y
+            animateTo(positionX(), clamped.y)
         }
-        animateTo(resting.x, resting.y)
     }
 
     private fun animateTo(x: Float, y: Float) {
@@ -917,8 +1178,8 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         val fromX: Float
         val fromY: Float
         if (viewModel.isCollapsed) {
-            fromX = positionX() + width / 2f
-            fromY = positionY() + height / 2f
+            fromX = positionX() + bubbleTotalWidth() / 2f
+            fromY = positionY() + bubbleTotalHeight() / 2f
         } else {
             fromX = rawX
             fromY = rawY
@@ -943,7 +1204,13 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         }
         val newX = x.roundToInt()
         val newY = y.roundToInt()
-        if (params.x == newX && params.y == newY) return
+        // Resize the window in the same update as the move, so a right-side bubble expanding
+        // doesn't first jump across the screen at bubble width and then grow (reads as a slide).
+        // Collapsed uses an exact bubble width (not WRAP_CONTENT) so the shrink needs no layout pass.
+        val newWidth = if (viewModel.isCollapsed) bubbleTotalWidth()
+        else screenWidth().takeIf { it > 0 } ?: WindowManager.LayoutParams.WRAP_CONTENT
+        if (params.x == newX && params.y == newY && params.width == newWidth) return
+        params.width = newWidth
         params.x = newX
         params.y = newY
         runCatching { boxWindowManager?.updateViewLayout(this, params) }
@@ -951,10 +1218,12 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
 
     private fun clampPosition(x: Float, y: Float): PointF {
         val insets = systemBarInsets()
+        val effectiveWidth = if (viewModel.isCollapsed) bubbleTotalWidth() else width
+        val effectiveHeight = if (viewModel.isCollapsed) bubbleTotalHeight() else height
         val minX = insets.left.toFloat()
-        val maxX = (screenWidth() - insets.right - width).toFloat()
+        val maxX = (screenWidth() - insets.right - effectiveWidth).toFloat()
         val minY = insets.top.toFloat()
-        val maxY = (screenHeight() - insets.bottom - height).toFloat()
+        val maxY = (screenHeight() - insets.bottom - effectiveHeight).toFloat()
         return PointF(
             x.coerceIn(min(minX, maxX), max(minX, maxX)),
             y.coerceIn(min(minY, maxY), max(minY, maxY)),
@@ -965,9 +1234,10 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         val clamped = clampPosition(x, y)
         if (!viewModel.isCollapsed) return clamped
         val insets = systemBarInsets()
+        val effectiveWidth = bubbleTotalWidth()
         val leftX = insets.left.toFloat()
-        val rightX = (screenWidth() - insets.right - width).toFloat()
-        val centerX = clamped.x + width / 2f
+        val rightX = (screenWidth() - insets.right - effectiveWidth).toFloat()
+        val centerX = clamped.x + effectiveWidth / 2f
         clamped.x = if (centerX <= screenWidth() / 2f) min(leftX, rightX) else max(leftX, rightX)
         return clamped
     }
@@ -988,10 +1258,11 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
     }
 
     private fun persistBubblePosition(x: Float, y: Float) {
-        if (width == 0 || screenHeight() == 0 || x.isNaN() || y.isNaN()) return
+        val effectiveWidth = if (viewModel.isCollapsed) bubbleTotalWidth() else width
+        if (effectiveWidth == 0 || screenHeight() == 0 || x.isNaN() || y.isNaN()) return
         viewModel.persistPosition(
             context,
-            onRightEdge = x + width / 2f > screenWidth() / 2f,
+            onRightEdge = x + effectiveWidth / 2f > screenWidth() / 2f,
             yRatio = y / screenHeight()
         )
     }
