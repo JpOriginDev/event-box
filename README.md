@@ -25,7 +25,7 @@ In your app's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.github.JpOriginDev:event-box:1.1.0")
+    implementation("com.github.JpOriginDev:event-box:1.1.1")
 }
 ```
 
@@ -197,7 +197,11 @@ OGEventBoxLog.setBubbleIconResId(R.mipmap.my_logo)
 ## Release builds
 
 Nothing extra is needed. The library ships its own ProGuard/R8 rules and keeps only the public API
-(`OGEventBoxLog`, `OGEventBoxDebugEvent`, `OGEventBoxValidator`).
+(`OGEventBoxLog`, `OGEventBoxDebugEvent`, `OGEventBoxValidator`). Your app's own R8 obfuscates the
+rest.
+
+The box shows event names and parameters on screen, which may include user data. Always gate it with
+`setDebugModeEnabled(BuildConfig.DEBUG)` and never enable it for end users.
 
 ## Known limits
 
@@ -206,6 +210,12 @@ Nothing extra is needed. The library ships its own ProGuard/R8 rules and keeps o
 - A dialog opened later briefly covers the box (about 150 ms) before it lifts back on top.
 - The box re-adds itself when the notification shade or keyboard takes focus, which restarts the
   auto-shrink timer.
+
+## License
+
+MIT, see [`LICENSE`](LICENSE). Third-party notices (Material Icons, Apache-2.0) are in
+[`NOTICE`](NOTICE). Not affiliated with or endorsed by Google; the Firebase limits checked are
+best-effort and may change.
 
 ## More
 

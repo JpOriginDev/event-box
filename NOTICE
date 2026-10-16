@@ -1,0 +1,19 @@
+Event Box
+Copyright (c) 2026 Jaydeep Patel. Licensed under the MIT License (see LICENSE).
+
+This product includes third-party material:
+
+1. Icons
+   The vector icons in eventBox/src/main/res/drawable (og_event_box_ic_bolt, _close,
+   _minimize, _pin, _unpin, _resize, _warning) are based on Material Icons
+   (https://fonts.google.com/icons), Copyright Google LLC, licensed under the
+   Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0).
+
+2. Runtime dependencies (not bundled; resolved by Gradle)
+   - AndroidX Core KTX - Apache License 2.0
+   - kotlinx.coroutines - Apache License 2.0
+   - Kotlin Standard Library - Apache License 2.0
+
+Trademarks: "Firebase" and "Google" are trademarks of Google LLC. Event Box is not
+affiliated with or endorsed by Google. Firebase limits checked by the validator are
+best-effort and may change; consult the official Firebase documentation.

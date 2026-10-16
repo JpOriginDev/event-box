@@ -23,7 +23,7 @@ Design constraints that drive most decisions:
 | Free for production users | Off by default; `log()` is a no-op while off; host gates it with `debugModeEnabled` |
 | Must never crash the host | Window ops, prefs access and event recording are wrapped in `runCatching` |
 | Reusable by anyone | Pure Kotlin, `minSdk 21`, only `core-ktx` + coroutines, own resources, fixed colours |
-| Hard to lift the source | Release build is minified/obfuscated; only the public API keeps names |
+| Hard to lift the source | Not guaranteed: AGP ignores `isMinifyEnabled` for the published AAR, so obfuscation comes from the consuming app's R8, which honours the keep rules |
 
 Module facts: library `com.ogmediaapps.eventbox`, `minSdk 21`, `compileSdk 37`, Java 11,
 `kotlinx-coroutines-android` exposed as `api` (StateFlow in the public API). Published to JitPack as

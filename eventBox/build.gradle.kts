@@ -55,7 +55,18 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.JpOriginDev"
                 artifactId = "event-box"
-                version = System.getenv("VERSION") ?: "1.1.0" // JitPack sets VERSION to the git tag
+                version = System.getenv("VERSION") ?: "1.1.1" // JitPack sets VERSION to the git tag
+
+                pom {
+                    name.set("Event Box")
+                    description.set("On-device event log overlay for testing Firebase Analytics events.")
+                    licenses {
+                        license {
+                            name.set("MIT License")
+                            url.set("https://opensource.org/licenses/MIT")
+                        }
+                    }
+                }
             }
         }
     }
