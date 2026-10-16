@@ -25,7 +25,7 @@ In your app's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.github.JpOriginDev:event-box:1.1.1")
+    implementation("com.github.JpOriginDev:event-box:1.1.2")
 }
 ```
 
