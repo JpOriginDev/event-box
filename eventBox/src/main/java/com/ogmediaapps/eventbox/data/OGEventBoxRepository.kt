@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.ogmediaapps.eventbox.model.OGEventBoxBackgroundMode
 import com.ogmediaapps.eventbox.model.OGEventBoxDebugEvent
 import com.ogmediaapps.eventbox.model.OGEventBoxPosition
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +37,9 @@ internal object OGEventBoxRepository {
 
     @Volatile
     var panelResizingEnabled = true
+
+    @Volatile
+    var backgroundMode = OGEventBoxBackgroundMode.OFF
 
     @Volatile
     private var appContext: Context? = null

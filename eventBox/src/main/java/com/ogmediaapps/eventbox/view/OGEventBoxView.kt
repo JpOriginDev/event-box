@@ -9,6 +9,7 @@ import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import android.os.Build
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Outline
@@ -1138,7 +1139,7 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
     private fun closeTargetWindowParams() = WindowManager.LayoutParams(
         closeWindowSizePx(),
         closeWindowSizePx(),
-        WindowManager.LayoutParams.TYPE_APPLICATION,
+        boxWindowParams?.type ?: WindowManager.LayoutParams.TYPE_APPLICATION,
         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
@@ -1267,7 +1268,7 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
     }
 
     private fun systemBarInsets(): Insets =
-        hostDecor()?.let { ViewCompat.getRootWindowInsets(it) }?.getInsets(WindowInsetsCompat.Type.systemBars()) ?: Insets.NONE
+        (hostDecor() ?: this).let { ViewCompat.getRootWindowInsets(it) }?.getInsets(WindowInsetsCompat.Type.systemBars()) ?: Insets.NONE
 
     companion object {
         private const val AUTO_SHRINK_DELAY_MS = 6_000L
@@ -1305,6 +1306,23 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         ).apply {
             gravity = Gravity.TOP or Gravity.START
             token = activity.window.attributes.token
+            windowAnimations = 0
+        }
+
+        /** Window for showing over other apps; needs the "Display over other apps" permission. */
+        @Suppress("DEPRECATION")
+        fun overlayWindowParams(): WindowManager.LayoutParams = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+            android.graphics.PixelFormat.TRANSLUCENT,
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
             windowAnimations = 0
         }
     }

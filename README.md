@@ -25,7 +25,7 @@ In your app's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.github.JpOriginDev:event-box:1.1.3")
+    implementation("com.github.JpOriginDev:event-box:1.2.0")
 }
 ```
 
@@ -180,6 +180,38 @@ OGEventBoxLog.setBubbleIconResId(R.mipmap.my_logo)
     .setDebugModeDurationHours(0.5)
     .install(this)
 ```
+
+## Keep it visible in the background (optional)
+
+By default the box shows only while one of your Activities is in front. To keep it visible in the
+background and in recents, pick a mode and ask the user for "Display over other apps":
+
+```kotlin
+OGEventBoxLog.setBackgroundMode(OGEventBoxBackgroundMode.AUTO)
+
+if (!OGEventBoxLog.hasOverlayPermission(context)) {
+    OGEventBoxLog.requestOverlayPermission(context) // opens the system settings screen
+}
+```
+
+| Mode | Behaviour |
+|---|---|
+| `OFF` (default) | Activity window only. No permission needed. |
+| `AUTO` | Activity window in front. Moves to a system overlay in the background if the permission is granted, otherwise hides. |
+| `OVERLAY_ONLY` | Always the system overlay; hidden while the permission is missing. |
+
+The permission is checked live, so granting or revoking it takes effect without restarting. The
+library never opens the settings screen by itself. The overlay lasts only while your app's process
+is alive; Android may stop a backgrounded process.
+
+The library does not declare `SYSTEM_ALERT_WINDOW`. Add it to your own app's manifest, ideally in
+`src/debug/AndroidManifest.xml` so it stays out of release builds:
+
+```xml
+<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+```
+
+Without it, `hasOverlayPermission()` returns `false` and the box behaves as with `OFF`.
 
 ## Other controls
 

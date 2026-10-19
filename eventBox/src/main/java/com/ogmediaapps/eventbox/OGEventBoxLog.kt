@@ -6,6 +6,7 @@ import android.widget.ImageView
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import com.ogmediaapps.eventbox.data.OGEventBoxRepository
+import com.ogmediaapps.eventbox.model.OGEventBoxBackgroundMode
 import com.ogmediaapps.eventbox.model.OGEventBoxDebugEvent
 import com.ogmediaapps.eventbox.view.OGEventBoxOverlay
 import kotlinx.coroutines.flow.StateFlow
@@ -134,6 +135,47 @@ object OGEventBoxLog {
     @JvmStatic
     fun setPanelResizingEnabled(enabled: Boolean): OGEventBoxLog = apply {
         this.panelResizingEnabled = enabled
+    }
+
+    @get:JvmStatic
+    @set:JvmSynthetic
+    var backgroundMode: OGEventBoxBackgroundMode
+        get() = OGEventBoxRepository.backgroundMode
+        set(value) {
+            OGEventBoxRepository.backgroundMode = value
+            OGEventBoxOverlay.sync()
+        }
+
+    /**
+     * Fluent setter for whether the box stays visible when the app is in the background.
+     * Defaults to [OGEventBoxBackgroundMode.OFF]. The overlay is only used while
+     * [hasOverlayPermission] is true; otherwise the box behaves as with `OFF`.
+     */
+    @JvmStatic
+    fun setBackgroundMode(mode: OGEventBoxBackgroundMode): OGEventBoxLog = apply {
+        this.backgroundMode = mode
+    }
+
+    /**
+     * True if the app may draw over other apps ("Display over other apps").
+     */
+    @JvmStatic
+    fun hasOverlayPermission(context: Context): Boolean = OGEventBoxOverlay.canDrawOverlays(context)
+
+    /**
+     * Opens the system screen where the user can grant "Display over other apps" to this app.
+     * The library never calls this itself; the host app decides when to ask.
+     */
+    @JvmStatic
+    fun requestOverlayPermission(context: Context) {
+        runCatching {
+            val intent = android.content.Intent(
+                android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                android.net.Uri.parse("package:${context.packageName}")
+            )
+            if (context !is android.app.Activity) intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+        }
     }
 
     // =========================================================================
