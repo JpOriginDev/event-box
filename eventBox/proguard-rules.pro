@@ -36,3 +36,7 @@
     public static int d(...);
     public static int v(...);
 }
+
+-keep public enum com.ogmediaapps.eventbox.model.OGEventBoxBackgroundMode {
+    *;
+}

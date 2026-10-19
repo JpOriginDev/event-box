@@ -25,7 +25,7 @@ In your app's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.github.JpOriginDev:event-box:1.2.0")
+    implementation("com.github.JpOriginDev:event-box:1.2.1")
 }
 ```
 
@@ -219,6 +219,9 @@ Without it, `hasOverlayPermission()` returns `false` and the box behaves as with
 |---|---|
 | `OGEventBoxLog.setFirebaseChecksEnabled(enabled)` | Enables or disables Firebase limits checks |
 | `OGEventBoxLog.setPanelResizingEnabled(enabled)` | Enables or disables panel height resizing |
+| `OGEventBoxLog.setBackgroundMode(mode)` | Keeps the box visible in the background: `OFF`, `AUTO` or `OVERLAY_ONLY` |
+| `OGEventBoxLog.hasOverlayPermission(context)` | Is "Display over other apps" granted? |
+| `OGEventBoxLog.requestOverlayPermission(context)` | Opens the system screen to grant it |
 | `OGEventBoxLog.disable()` | Ends the session now |
 | `OGEventBoxLog.updateDebugModeDurationHours(context, 1.0)` | Changes the session length |
 | `OGEventBoxLog.isActive` | Is the box on? (`Boolean`) |
@@ -231,7 +234,7 @@ Without it, `hasOverlayPermission()` returns `false` and the box behaves as with
 ## Release builds
 
 Nothing extra is needed. The library ships its own ProGuard/R8 rules and keeps only the public API
-(`OGEventBoxLog`, `OGEventBoxDebugEvent`, `OGEventBoxValidator`). Your app's own R8 obfuscates the
+(`OGEventBoxLog`, `OGEventBoxDebugEvent`, `OGEventBoxBackgroundMode`, `OGEventBoxValidator`). Your app's own R8 obfuscates the
 rest.
 
 The box shows event names and parameters on screen, which may include user data. Always gate it with
@@ -239,6 +242,8 @@ The box shows event names and parameters on screen, which may include user data.
 
 ## Known limits
 
+- The background overlay needs `SYSTEM_ALERT_WINDOW` in your app and only lasts while Android keeps
+  your process alive.
 - The bubble sits on the left or right edge; its window is as wide as the bubble while collapsed,
   so it never blocks touches elsewhere.
 - A dialog opened later briefly covers the box (about 150 ms) before it lifts back on top.

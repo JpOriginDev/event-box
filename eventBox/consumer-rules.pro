@@ -10,3 +10,7 @@
 -keep public class com.ogmediaapps.eventbox.validator.OGEventBoxValidator {
     public *;
 }
+
+-keep public enum com.ogmediaapps.eventbox.model.OGEventBoxBackgroundMode {
+    *;
+}
