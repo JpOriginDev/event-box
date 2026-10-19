@@ -25,9 +25,11 @@ In your app's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.github.JpOriginDev:event-box:1.1.2")
+    implementation("com.github.JpOriginDev:event-box:1.1.3")
 }
 ```
+
+The library supports compileSdk 36+ and AGP 9.0+.
 
 ## 2. Set it up
 

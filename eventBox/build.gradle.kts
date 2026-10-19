@@ -6,7 +6,7 @@ plugins {
 android {
     namespace = "com.ogmediaapps.eventbox"
     compileSdk {
-        version = release(37)
+        version = release(36)
     }
 
     defaultConfig {
@@ -55,7 +55,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.JpOriginDev"
                 artifactId = "event-box"
-                version = System.getenv("VERSION") ?: "1.1.2" // JitPack sets VERSION to the git tag
+                version = System.getenv("VERSION") ?: "1.1.3" // JitPack sets VERSION to the git tag
 
                 pom {
                     name.set("Event Box")
