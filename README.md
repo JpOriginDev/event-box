@@ -1,11 +1,55 @@
 # Event Box
 
+[![JitPack](https://jitpack.io/v/JpOriginDev/event-box.svg)](https://jitpack.io/#JpOriginDev/event-box)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![minSdk](https://img.shields.io/badge/minSdk-21-brightgreen.svg)](#1-add-the-dependency)
+[![Kotlin](https://img.shields.io/badge/Kotlin-%20%7C%20Java-7F52FF.svg?logo=kotlin&logoColor=white)](#4-log-your-events)
+
 A floating on-screen log for Android testers. A small bubble sits on top of your app; tap it to
 open a panel that shows your analytics events as they fire, so you don't have to watch logcat.
 
+<!-- TODO: record a short GIF (10-15 s) and save it as docs/demo.gif -->
+<p align="center">
+  <img src="docs/demo.gif" alt="Event Box demo: tap the bubble, watch events and Firebase warnings appear live" width="320">
+</p>
+
+Think of it as **Firebase DebugView on the device itself**: no adb, no USB cable, no logcat filters.
+
 - For testing only: it can be switched off completely and records nothing while off.
-- No permissions, no manifest entries.
+- No permissions needed (the background overlay is optional and opt-in).
 - `minSdk 21`, pure Kotlin, works from Java too.
+
+## Why use Event Box?
+
+**The problem:** checking analytics events means plugging in a cable, filtering logcat or setting up
+DebugView. Testers can't do it on their own phones, and wrong events (bad names, too many
+parameters) are often found only after release.
+
+**Event Box fixes that:**
+
+| Who | How it helps |
+|---|---|
+| **QA and testers** | See every event live on the phone, in the real build, with no cable or tools. |
+| **Android developers** | Verify that the right event fires with the right parameters while you build a feature. |
+| **Analytics and product teams** | Check a release flow end to end and catch tracking mistakes before users do. |
+| **Teams using Firebase Analytics** | Get an instant ⚠ warning when an event breaks a Firebase limit. |
+
+## Features
+
+- **Live event log**: events appear as they fire, with number, time, name and parameters.
+- **Floating bubble and panel**: drag it anywhere, it snaps to the screen edge, shows an unread
+  badge, and shrinks back on its own.
+- **Firebase limit warnings**: a ⚠ icon on any event that breaks a Firebase Analytics rule, with
+  the exact reason on tap.
+- **Resizable, pinnable panel**: drag the bottom handle to change the height, pin to keep it open.
+- **Background overlay** (optional): keep the box visible when your app is in the background or in
+  recents (`OFF`, `AUTO`, `OVERLAY_ONLY`).
+- **Safe by design**: a kill switch, a timed session that ends by itself, and logging that never
+  throws into your app.
+- **Simple API**: fluent setup, `log()` with a name, a `Bundle` or a `Map`, plus user properties.
+- **Customizable bubble**: your own icon, colors, border and corner radius.
+- **Reactive**: read events and state as Kotlin `StateFlow`.
+- **Kotlin and Java**: both are supported, with its own R8 rules built in.
 
 ## 1. Add the dependency
 
