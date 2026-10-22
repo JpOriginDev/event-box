@@ -69,7 +69,7 @@ In your app's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.github.JpOriginDev:event-box:1.2.1")
+    implementation("com.github.JpOriginDev:event-box:1.3.0")
 }
 ```
 
@@ -147,6 +147,35 @@ OGEventBoxLog.log("item_selected", params);
 // User property
 OGEventBoxLog.setUserProperty("user_tier", "premium");
 ```
+
+### Log to Firebase and Event Box in one call (optional)
+
+Instead of calling `OGEventBoxLog.log()` next to every analytics call, wrap your SDK once. The
+wrapper has no analytics dependency of its own, so it works with Firebase, Amplitude, Mixpanel or
+anything else.
+
+**Kotlin**
+```kotlin
+val analytics = OGEventBoxAnalytics.wrap(
+    eventSink = { name, params -> firebaseAnalytics.logEvent(name, params) },
+    userPropertySink = { name, value -> firebaseAnalytics.setUserProperty(name, value) }
+)
+
+analytics.logEvent("purchase", bundle)
+analytics.setUserProperty("user_tier", "premium")
+```
+
+**Java**
+```java
+OGEventBoxAnalytics analytics = OGEventBoxAnalytics.wrap(
+    (name, params) -> firebaseAnalytics.logEvent(name, params),
+    (name, value) -> firebaseAnalytics.setUserProperty(name, value));
+
+analytics.logEvent("purchase", bundle);
+```
+
+The event goes to Event Box first (it never throws), then to your SDK. While the box is off, only
+your SDK call runs. `userPropertySink` is optional.
 
 Log each event once. Calls are ignored while the box is off, and logging never throws into your
 app.

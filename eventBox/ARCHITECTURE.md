@@ -42,6 +42,7 @@ eventBox/
     AndroidManifest.xml   empty (no components, no permissions)
     java/com/ogmediaapps/eventbox/
       OGEventBoxLog.kt          PUBLIC facade: fluent config, session control, logging API
+      OGEventBoxAnalytics.kt    PUBLIC: wrapper that logs to your SDK and Event Box in one call
       model/
         OGEventBoxDebugEvent.kt PUBLIC: log row (index, time, name, params, warnings)
         OGEventBoxPosition.kt   bubble rail + Y ratio

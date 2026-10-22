@@ -40,3 +40,13 @@
 -keep public enum com.ogmediaapps.eventbox.model.OGEventBoxBackgroundMode {
     *;
 }
+
+-keep public class com.ogmediaapps.eventbox.OGEventBoxAnalytics {
+    public *;
+}
+-keep public interface com.ogmediaapps.eventbox.OGEventBoxAnalytics$EventSink {
+    *;
+}
+-keep public interface com.ogmediaapps.eventbox.OGEventBoxAnalytics$UserPropertySink {
+    *;
+}
