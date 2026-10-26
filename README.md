@@ -69,7 +69,7 @@ In your app's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.github.JpOriginDev:event-box:1.3.0")
+    implementation("com.github.JpOriginDev:event-box:1.3.1")
 }
 ```
 
@@ -319,6 +319,8 @@ The box shows event names and parameters on screen, which may include user data.
   your process alive.
 - The bubble sits on the left or right edge; its window is as wide as the bubble while collapsed,
   so it never blocks touches elsewhere.
+- The box stays visible while a system dialog (such as a runtime permission prompt) is open over
+  your Activity; it only hides when the Activity stops or finishes.
 - A dialog opened later briefly covers the box (about 150 ms) before it lifts back on top.
 - The box re-adds itself when the notification shade or keyboard takes focus, which restarts the
   auto-shrink timer.

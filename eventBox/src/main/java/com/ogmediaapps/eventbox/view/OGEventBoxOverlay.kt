@@ -216,9 +216,10 @@ internal object OGEventBoxOverlay : Application.ActivityLifecycleCallbacks {
 
     override fun onActivityPaused(activity: Activity) {
         if (currentActivity !== activity) return
+        // A pause alone (system permission dialog, other translucent screen) keeps the box where it
+        // is; the activity is only dropped once it finishes or stops (see onActivityStopped).
+        if (!activity.isFinishing) return
         currentActivity = null
-        // Without background display this just detaches; with it, the box stays put until the
-        // app really leaves the foreground (see onActivityStopped).
         if (OGEventBoxRepository.isActive) sync() else detach()
     }
 
@@ -229,6 +230,11 @@ internal object OGEventBoxOverlay : Application.ActivityLifecycleCallbacks {
 
     override fun onActivityStopped(activity: Activity) {
         if (startedCount > 0) startedCount--
+        if (currentActivity === activity) {
+            // Stopped without another Activity taking over (e.g. the app went to the background).
+            currentActivity = null
+            if (OGEventBoxRepository.isActive) sync() else detach()
+        }
         // Last Activity gone: the app is in the background, so hand over to the overlay if allowed.
         if (startedCount == 0) sync()
     }

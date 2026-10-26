@@ -178,7 +178,9 @@ Host gesture
 
 During session
   log("x") -> validate -> StateFlow emits -> OGEventBoxView.renderEvents (rows / badge)
-  Activity change: pause -> detach(); resume -> attach(); state lives in the ViewModel
+  Activity change: resume -> attach() to the new Activity; stop (or finishing pause) of the
+    current Activity -> detach() / overlay hand-over; plain pause keeps the box attached
+    (system permission dialogs, translucent screens); state lives in the ViewModel
   Dialog opens: focus lost -> 150 ms -> remove + re-add window (back on top)
   Drag/drop: settle -> anchor + store position
 
@@ -224,7 +226,8 @@ End of session (any of)
 
 - A dialog covers the box ~150 ms before it is lifted back; IME and shade also trigger a re-add,
   which restarts the auto-shrink timer.
-- The window is removed on Activity pause and re-added on resume.
+- The window stays attached while the Activity is only paused (e.g. the system permission dialog
+  is showing). It is removed when the Activity stops or finishes, and re-added on resume.
 - A ~18 dp margin around the bubble belongs to its window and does not pass touches through.
 - Content-view fallback mode cannot float above dialogs.
 - `install()` needs an `Application` context to register lifecycle callbacks.
