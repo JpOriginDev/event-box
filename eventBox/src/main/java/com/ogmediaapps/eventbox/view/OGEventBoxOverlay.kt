@@ -86,6 +86,14 @@ internal object OGEventBoxOverlay : Application.ActivityLifecycleCallbacks {
         }
     }
 
+    /**
+     * Re-applies the panel opacity in the active view, if attached.
+     * Placeholder until the new panel view lands (Phase 6): it needs `OGEventBoxView.applyPanelAlpha()`.
+     */
+    fun updatePanelAlpha() {
+        // TODO(Phase 6c): forward to view?.applyPanelAlpha() on the main thread.
+    }
+
     private enum class Target { NONE, ACTIVITY, OVERLAY }
 
     private fun desiredTarget(): Target {

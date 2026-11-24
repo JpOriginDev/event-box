@@ -76,4 +76,29 @@ public class OGEventBoxJavaInteropTest {
         OGEventBoxLog.setPanelResizingEnabled(true);
         assertTrue(OGEventBoxLog.isPanelResizingEnabled());
     }
+
+    @Test
+    public void testJavaResultsAndVerificationApi() {
+        OGEventBoxLog.setMaxEvents(300)
+            .setDetectDuplicates(false)
+            .setDuplicateWindowMs(250L);
+
+        assertEquals(300, OGEventBoxLog.getMaxEvents());
+        assertFalse(OGEventBoxLog.getDetectDuplicates());
+        assertEquals(250L, OGEventBoxLog.getDuplicateWindowMs());
+        assertEquals(0, OGEventBoxLog.getDroppedEventCount());
+
+        // Java callers can use the 3-arg overloads and the old constructor shapes.
+        OGEventBoxLog.log("e", (java.util.Map<String, Object>) null, "firebase");
+        OGEventBoxLog.log("e", (android.os.Bundle) null, "firebase");
+        com.ogmediaapps.eventbox.model.OGEventBoxDebugEvent event =
+                new com.ogmediaapps.eventbox.model.OGEventBoxDebugEvent(1, 0L, "x");
+        assertEquals(1, event.getRepeatCount());
+        assertNull(event.getSource());
+
+        // Reset
+        OGEventBoxLog.setMaxEvents(OGEventBoxLog.MAX_EVENTS)
+            .setDetectDuplicates(true)
+            .setDuplicateWindowMs(500L);
+    }
 }

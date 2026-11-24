@@ -168,6 +168,8 @@ object OGEventBoxLog {
      */
     @JvmStatic
     fun requestOverlayPermission(context: Context) {
+        // Before Android 6 the permission is granted at install time and this screen doesn't exist.
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) return
         runCatching {
             val intent = android.content.Intent(
                 android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
@@ -255,6 +257,21 @@ object OGEventBoxLog {
     }
 
     /**
+     * Logs an event with parameters and a [source] tag (e.g. "firebase", "appsflyer"), so events
+     * from different SDKs can be told apart and searched in the box.
+     */
+    @JvmStatic
+    fun log(name: String, params: Map<String, Any?>?, source: String?) {
+        OGEventBoxRepository.log(name, params, source)
+    }
+
+    /** Logs an event with a bundle of parameters and a [source] tag. */
+    @JvmStatic
+    fun log(name: String, bundle: android.os.Bundle?, source: String?) {
+        OGEventBoxRepository.log(name, bundle, source)
+    }
+
+    /**
      * Records a user property into the OGEventBox log and validates against Firebase limits.
      */
     @JvmStatic
@@ -270,6 +287,54 @@ object OGEventBoxLog {
         OGEventBoxRepository.clear()
         OGEventBoxOverlay.viewModel.lastSeenIndex = 0
     }
+
+    // =========================================================================
+    // 5b. Log size & duplicate detection
+    // =========================================================================
+
+    /**
+     * How many entries the log keeps before dropping the oldest. Defaults to [MAX_EVENTS];
+     * values are kept within 10..1000.
+     */
+    @get:JvmStatic
+    @set:JvmSynthetic
+    var maxEvents: Int
+        get() = OGEventBoxRepository.maxEvents
+        set(value) { OGEventBoxRepository.maxEvents = value }
+
+    /** Fluent setter for [maxEvents]. */
+    @JvmStatic
+    fun setMaxEvents(count: Int): OGEventBoxLog = apply { this.maxEvents = count }
+
+    /** Entries dropped from the top of the log since the last clear because it was full. */
+    @get:JvmStatic
+    val droppedEventCount: Int get() = OGEventBoxRepository.droppedCount
+
+    /**
+     * When true (the default), an event that fires again with the same name, source and
+     * parameters within [duplicateWindowMs] of the previous one is counted on that row (shown as
+     * ×N) instead of adding a new row. Double-firing is a common analytics bug.
+     */
+    @get:JvmStatic
+    @set:JvmSynthetic
+    var detectDuplicates: Boolean
+        get() = OGEventBoxRepository.detectDuplicates
+        set(value) { OGEventBoxRepository.detectDuplicates = value }
+
+    /** Fluent setter for [detectDuplicates]. */
+    @JvmStatic
+    fun setDetectDuplicates(enabled: Boolean): OGEventBoxLog = apply { this.detectDuplicates = enabled }
+
+    /** How close together (in ms) two identical events must be to count as a duplicate. Default 500. */
+    @get:JvmStatic
+    @set:JvmSynthetic
+    var duplicateWindowMs: Long
+        get() = OGEventBoxRepository.duplicateWindowMs
+        set(value) { OGEventBoxRepository.duplicateWindowMs = value }
+
+    /** Fluent setter for [duplicateWindowMs]. */
+    @JvmStatic
+    fun setDuplicateWindowMs(windowMs: Long): OGEventBoxLog = apply { this.duplicateWindowMs = windowMs }
 
     // =========================================================================
     // 6. Bubble Styling & Appearance
@@ -331,4 +396,21 @@ object OGEventBoxLog {
     fun setBubbleCornerRadiusDp(radiusDp: Float): OGEventBoxLog = apply {
         this.bubbleCornerRadiusDp = radiusDp
     }
+
+    /**
+     * Opacity of the open panel's background, from 0.6 (see the app through it) to 1 (solid, the
+     * default). Text stays fully opaque. Testers can also cycle it by long-pressing the panel logo.
+     */
+    @get:JvmStatic
+    @set:JvmSynthetic
+    var panelAlpha: Float
+        get() = OGEventBoxRepository.panelAlpha
+        set(value) {
+            OGEventBoxRepository.panelAlpha = value
+            OGEventBoxOverlay.updatePanelAlpha()
+        }
+
+    /** Fluent setter for [panelAlpha]. */
+    @JvmStatic
+    fun setPanelAlpha(alpha: Float): OGEventBoxLog = apply { this.panelAlpha = alpha }
 }

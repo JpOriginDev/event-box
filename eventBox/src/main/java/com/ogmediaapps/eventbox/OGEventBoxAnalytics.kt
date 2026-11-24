@@ -17,7 +17,8 @@ import android.os.Bundle
  */
 class OGEventBoxAnalytics private constructor(
     private val eventSink: EventSink,
-    private val userPropertySink: UserPropertySink?
+    private val userPropertySink: UserPropertySink?,
+    private val source: String?
 ) {
 
     /** Forwards an event to your analytics SDK. */
@@ -36,7 +37,7 @@ class OGEventBoxAnalytics private constructor(
     /** Logs an event with [params] to Event Box, then to your analytics SDK. */
     fun logEvent(name: String, params: Bundle?) {
         // Event Box never throws, so it goes first: a failing SDK call cannot hide the event.
-        OGEventBoxLog.log(name, params)
+        OGEventBoxLog.log(name, params, source)
         eventSink.logEvent(name, params)
     }
 
@@ -49,13 +50,14 @@ class OGEventBoxAnalytics private constructor(
     companion object {
         /**
          * Creates a wrapper. [userPropertySink] is optional; without it user properties are
-         * recorded in Event Box only.
+         * recorded in Event Box only. [source] tags every event in the box (e.g. "firebase").
          */
         @JvmStatic
         @JvmOverloads
         fun wrap(
             eventSink: EventSink,
-            userPropertySink: UserPropertySink? = null
-        ): OGEventBoxAnalytics = OGEventBoxAnalytics(eventSink, userPropertySink)
+            userPropertySink: UserPropertySink? = null,
+            source: String? = null,
+        ): OGEventBoxAnalytics = OGEventBoxAnalytics(eventSink, userPropertySink, source)
     }
 }
