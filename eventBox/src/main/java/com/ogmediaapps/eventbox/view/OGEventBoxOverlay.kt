@@ -43,7 +43,9 @@ internal object OGEventBoxOverlay : Application.ActivityLifecycleCallbacks {
     private var appContext: Context? = null
 
     private val focusListener = ViewTreeObserver.OnWindowFocusChangeListener { hasFocus ->
-        if (!hasFocus) view?.postDelayed(raiseRunnable, RAISE_DELAY_MS)
+        // The Activity also loses focus when the box's own search field takes it; re-adding the
+        // window then would throw the keyboard away, so only raise for other windows.
+        if (!hasFocus && view?.isSearchInputFocused != true) view?.postDelayed(raiseRunnable, RAISE_DELAY_MS)
     }
     private val raiseRunnable = Runnable { raiseAboveNewWindows() }
 
@@ -86,12 +88,15 @@ internal object OGEventBoxOverlay : Application.ActivityLifecycleCallbacks {
         }
     }
 
-    /**
-     * Re-applies the panel opacity in the active view, if attached.
-     * Placeholder until the new panel view lands (Phase 6): it needs `OGEventBoxView.applyPanelAlpha()`.
-     */
+    /** Re-applies the panel opacity in the active view, if attached. Safe from any thread. */
     fun updatePanelAlpha() {
-        // TODO(Phase 6c): forward to view?.applyPanelAlpha() on the main thread.
+        runCatching {
+            if (Looper.myLooper() == Looper.getMainLooper()) {
+                view?.applyPanelAlpha()
+            } else {
+                mainHandler.post { view?.applyPanelAlpha() }
+            }
+        }
     }
 
     private enum class Target { NONE, ACTIVITY, OVERLAY }
@@ -196,6 +201,7 @@ internal object OGEventBoxOverlay : Application.ActivityLifecycleCallbacks {
         val box = view ?: return
         val params = windowParams ?: return
         if (activity.isFinishing || activity.isDestroyed) return
+        if (box.isSearchInputFocused) return
         runCatching {
             activity.windowManager.removeViewImmediate(box)
             activity.windowManager.addView(box, params)
