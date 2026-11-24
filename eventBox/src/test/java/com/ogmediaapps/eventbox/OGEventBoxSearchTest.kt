@@ -3,6 +3,7 @@ package com.ogmediaapps.eventbox
 import com.ogmediaapps.eventbox.filter.OGEventBoxExport
 import com.ogmediaapps.eventbox.filter.OGEventBoxQuery
 import com.ogmediaapps.eventbox.model.OGEventBoxDebugEvent
+import com.ogmediaapps.eventbox.viewmodel.OGEventBoxViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -115,5 +116,37 @@ class OGEventBoxSearchTest {
         val log = OGEventBoxExport.logJson(listOf(login, noParams))
         assertTrue(log.startsWith("[\n") && log.endsWith("\n]"))
         assertTrue(log.contains("\"params\": {}"))
+    }
+
+    @Test
+    fun viewModelSearchStateResets() {
+        val vm = OGEventBoxViewModel()
+        vm.openSearch()
+        vm.setQuery("login")
+        assertTrue(vm.isSearchOpen)
+        assertTrue(vm.isFiltering)
+        assertEquals("login", vm.uiState.value.query)
+
+        vm.closeSearch()
+        assertFalse(vm.isSearchOpen)
+        assertFalse(vm.isFiltering)
+
+        vm.setQuery("x")
+        vm.clearEvents()
+        assertEquals("", vm.query)
+
+        vm.openSearch()
+        vm.setQuery("y")
+        vm.resetSessionState()
+        assertEquals("", vm.query)
+        assertFalse(vm.isSearchOpen)
+    }
+
+    @Test
+    fun unreadCountIgnoresFilter() {
+        val vm = OGEventBoxViewModel()
+        vm.setQuery("login")
+        assertEquals(1, vm.visibleEvents(all).size)
+        assertEquals(4, vm.getUnreadCount(all))
     }
 }
