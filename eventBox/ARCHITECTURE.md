@@ -25,9 +25,10 @@ Design constraints that drive most decisions:
 | Reusable by anyone | Pure Kotlin, `minSdk 21`, only `core-ktx` + coroutines, own resources, fixed colours |
 | Hard to lift the source | Not guaranteed: AGP ignores `isMinifyEnabled` for the published AAR, so obfuscation comes from the consuming app's R8, which honours the keep rules |
 
-Module facts: library `com.ogmediaapps.eventbox`, `minSdk 21`, `compileSdk 37`, Java 11,
-`kotlinx-coroutines-android` exposed as `api` (StateFlow in the public API). Published to JitPack as
-`com.github.JpOriginDev:event-box` (version comes from the git tag via `VERSION`).
+Module facts: library `com.ogmediaapps.eventbox`, `minSdk 21`, `compileSdk 36`, Java 11,
+`kotlinx-coroutines-android` exposed as `api` (StateFlow in the public API), `androidx.recyclerview`
+for the event list. Published to JitPack as `com.github.JpOriginDev:event-box` (version comes from
+the git tag via `VERSION`).
 
 ---
 
@@ -35,11 +36,12 @@ Module facts: library `com.ogmediaapps.eventbox`, `minSdk 21`, `compileSdk 37`, 
 
 ```
 eventBox/
-  build.gradle.kts        library config, minify on for release, deps, maven-publish
+  build.gradle.kts        library config, minify on for release, deps (core-ktx, coroutines,
+                          recyclerview), maven-publish
   proguard-rules.pro      rules applied when the library itself is built (obfuscation)
   consumer-rules.pro      packaged into the AAR as proguard.txt (keeps public API only)
   src/main/
-    AndroidManifest.xml   empty (no components, no permissions)
+    AndroidManifest.xml   one <provider> (share FileProvider), no permissions
     java/com/ogmediaapps/eventbox/
       OGEventBoxLog.kt          PUBLIC facade: fluent config, session control, logging API
       OGEventBoxAnalytics.kt    PUBLIC: wrapper that logs to your SDK and Event Box in one call
@@ -49,25 +51,34 @@ eventBox/
         OGEventBoxUiState.kt    presentation state for MVVM
       data/
         OGEventBoxRepository.kt in-memory events, session state, expiry timer
-        OGEventBoxStore.kt      SharedPreferences persistence (expiry, bubble position)
+        OGEventBoxStore.kt      SharedPreferences persistence (expiry, bubble position,
+                                panel height and opacity, one-time hint flags)
+      filter/
+        OGEventBoxQuery.kt      search: terms, key:value, !exclude, is: keywords
+        OGEventBoxFormat.kt     value type tags, +delta time, key/value rows
+        OGEventBoxExport.kt     event / log to JSON for copy and share
       validator/
         OGEventBoxValidator.kt  PUBLIC: Firebase limit checks -> warning strings
       viewmodel/
         OGEventBoxViewModel.kt  collapsed/pinned state, anchor, unread badge, panel height
       view/
         OGEventBoxView.kt       the overlay view: panel, bubble, drag/snap, resize, close target
+        OGEventBoxAdapter.kt    RecyclerView ListAdapter: row binding, stripes, x N badge, highlight
+        OGEventBoxFileProvider.kt  shares long logs as a .json file from the cache folder
         OGEventBoxOverlay.kt    ActivityLifecycleCallbacks; owns the box window
     res/
       layout/   og_event_box.xml        <merge>: panel (header, list, resize handle) + bubble
                 og_event_box_item.xml   one log row + expandable warning details
                 og_event_box_close.xml  drop-to-close target
       drawable/ og_event_box_*.xml      shapes and vector icons
+      xml/      og_event_box_file_paths.xml   cache folder exposed by the share FileProvider
       values/   colors.xml  dimens.xml  strings.xml   (all prefixed og_event_box_)
-  src/test/     OGEventBoxTest.kt, OGEventBoxJavaInteropTest.java (JVM unit tests)
+  src/test/     OGEventBox*Test.kt, OGEventBoxJavaInteropTest.java (JVM unit tests)
 ```
 
-Everything is `internal` except `OGEventBoxLog`, `OGEventBoxDebugEvent` and `OGEventBoxValidator`.
-Those three are the compatibility surface and the only names kept by ProGuard.
+Everything is `internal` except `OGEventBoxLog`, `OGEventBoxAnalytics`, `OGEventBoxDebugEvent`,
+`OGEventBoxBackgroundMode` and `OGEventBoxValidator`. Those are the compatibility surface and the
+only names kept by ProGuard.
 
 ---
 
@@ -78,11 +89,14 @@ Those three are the compatibility surface and the only names kept by ProGuard.
 - Fluent setters (all `@JvmStatic`, return `OGEventBoxLog`): `setDebugModeEnabled`,
   `setDebugModeDurationHours`, `setFirebaseChecksEnabled`, `setPanelResizingEnabled`,
   `setBubbleIconResId`, `setBubbleIconScaleType`, `setBubbleBackgroundColor`,
-  `setBubbleBorderColor`, `setBubbleBorderWidthDp`, `setBubbleCornerRadiusDp`, `install`.
+  `setBubbleBorderColor`, `setBubbleBorderWidthDp`, `setBubbleCornerRadiusDp`,
+  `setBackgroundMode`, `setMaxEvents`, `setDetectDuplicates`, `setDuplicateWindowMs`,
+  `setPanelAlpha`, `install`.
 - Session: `setEnabled`, `disable`, `updateDebugModeDurationHours`, `remainingMinutes`,
-  `isActive`, `isActiveFlow`.
-- Logging: `log(name)`, `log(name, Bundle?)`, `log(name, Map?)`, `setUserProperty`, `clear`,
-  `events` (capped at `MAX_EVENTS = 200`).
+  `isActive`, `isActiveFlow`, `hasOverlayPermission`, `requestOverlayPermission`.
+- Logging: `log(name)`, `log(name, Bundle?)`, `log(name, Map?)` (each also with a `source` tag),
+  `setUserProperty`, `clear`, `events` (default `MAX_EVENTS = 200`, adjustable 10..1000 with
+  `setMaxEvents`; `droppedEventCount` says how many were dropped).
 - Property setters are `@JvmSynthetic` so Java sees only the fluent form.
 
 ### 3.2 `OGEventBoxDebugEvent` (public `data class`)
@@ -138,7 +152,8 @@ Activity changes: `isCollapsed`, `isPinned`, `anchorX/anchorY`, `lastSeenIndex` 
    (`animateBubbleEntryWhenSettled` -> `showBubbleAfterMove`), then fades in; on the left it
    enters immediately.
 4. **Header mirroring.** `applyHeaderOrientation` re-adds header children in mirrored order when
-   the bubble is on the right, so the logo always sits next to the bubble.
+   the bubble is on the right, so the logo always sits next to the bubble. Every size comes from
+   the `og_event_box_header_*` dimens, which the layout uses too, so the two cannot drift apart.
 5. **Snapping.** `snapPosition` = `clampPosition` (inside system-bar insets); for the collapsed
    bubble x is forced to the nearer rail. Settling uses a `ValueAnimator` (`animateTo`) because
    a window cannot be moved by a view animator.
@@ -147,8 +162,10 @@ Activity changes: `isCollapsed`, `isPinned`, `anchorX/anchorY`, `lastSeenIndex` 
 7. **Resize.** `ResizeTouchListener` changes `contentContainer`'s height between
    `og_event_box_min_list_height` and 85% of the screen (also bounded by space below the panel).
    While dragging in either direction the handle bar scales up and takes the accent colour
-   (`setHandleHighlighted`). The header resize icon blinks the bar twice. Disabled entirely by
-   `setPanelResizingEnabled(false)`; the height is stored in `viewModel.customPanelHeight`.
+   (`setHandleHighlighted`). A drag starts only past the touch slop; a double-tap animates back to
+   `og_event_box_list_height`. Until the first drag the bar pulses each time the panel opens.
+   The height lives in `viewModel.customPanelHeight` and is saved (in dp) by `OGEventBoxStore`.
+   Disabled entirely by `setPanelResizingEnabled(false)`.
 8. **Warnings.** Rows with warnings show a ⚠ icon; tapping expands the details with
    `TransitionManager`, one open row at a time (`expandedEventIndex`).
 9. **Close target.** Separate `FLAG_NOT_TOUCHABLE` window revealed while a drag is near the
@@ -157,6 +174,13 @@ Activity changes: `isCollapsed`, `isPinned`, `anchorX/anchorY`, `lastSeenIndex` 
 10. **Styling.** `styleBubble()` / `applyLogoTo()` read the `OGEventBoxLog.bubble*` options.
 11. **Coroutines.** On attach a `CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)`
     collects the event flow; cancelled on detach.
+12. **Clear with undo.** Clear calls `OGEventBoxRepository.clearUndoable()`, which keeps the removed
+    entries, and shows an undo pill for 4 s. Undo calls `restore()`: entries logged in the meantime
+    are kept and renumbered after the restored ones. The Firebase validator is reset only by
+    `commitClear()`, when the offer ends (timeout, a second Clear, collapse or detach).
+13. **Search.** `OGEventBoxQuery` is the only filter: text terms, `key:value`, `!` and the
+    `is:warning` / `is:user_property` / `is:event` / `is:repeated` keywords. Pause and Share sit
+    in the header; pausing is independent of the search bar, and Clear resumes.
 
 Constants live in the companion object (auto-shrink 6 s, highlight 2.5 s, idle alpha 0.55,
 animation durations, close-target radii).
@@ -196,10 +220,10 @@ End of session (any of)
 - `eventBox/build.gradle.kts`: `release { isMinifyEnabled = true; proguardFiles(optimize,
   proguard-rules.pro) }`, `consumerProguardFiles("consumer-rules.pro")`.
   `isShrinkResources` is not available for libraries -- the host app does it.
-- `proguard-rules.pro`: keeps public members of `OGEventBoxLog`, `OGEventBoxDebugEvent` and
-  `OGEventBoxValidator`; everything else is repackaged into `com.ogmediaapps.eventbox.a`,
+- `proguard-rules.pro`: keeps the public API (`OGEventBoxLog`, `OGEventBoxAnalytics` and its sinks,
+  `OGEventBoxDebugEvent`, `OGEventBoxBackgroundMode`, `OGEventBoxValidator`); everything else is repackaged into `com.ogmediaapps.eventbox.a`,
   renamed, and stripped of Kotlin intrinsic null checks and `Log.d/v`.
-- `consumer-rules.pro`: the same three keep rules only, shipped as `proguard.txt` in the AAR.
+- `consumer-rules.pro`: the same keep rules only, shipped as `proguard.txt` in the AAR.
 - Publishing: `jitpack.yml` runs `publishReleasePublicationToMavenLocal`; coordinates
   `com.github.JpOriginDev:event-box`, version from the `VERSION` env var (the git tag).
 - If you add a **public** class, add it to *both* rules files.
