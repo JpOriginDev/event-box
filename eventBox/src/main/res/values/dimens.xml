@@ -5,7 +5,7 @@
     <dimen name="og_event_box_corner_radius">16dp</dimen>
     <dimen name="og_event_box_list_height">180dp</dimen>
     <dimen name="og_event_box_min_list_height">80dp</dimen>
-    <dimen name="og_event_box_resize_handle_height">18dp</dimen>
+    <dimen name="og_event_box_resize_handle_height">18dp</dimen> <!-- Phase 6b: 20dp -->
     <dimen name="og_event_box_row_spacing">3dp</dimen>
     <dimen name="og_event_box_bubble_size">54dp</dimen>
     <dimen name="og_event_box_bubble_icon_size">46dp</dimen>
@@ -14,4 +14,19 @@
     <dimen name="og_event_box_close_margin">56dp</dimen>
     <!-- Room around the close target inside its own window, so growing it can't clip. -->
     <dimen name="og_event_box_close_slack">24dp</dimen>
+    <!-- Widest the open panel gets, so it stays readable on tablets and in landscape. -->
+    <dimen name="og_event_box_max_panel_width">480dp</dimen>
+    <dimen name="og_event_box_header_button_height">48dp</dimen>
+
+    <!--
+        Header metrics. OGEventBoxView rebuilds the header in code to mirror it for a right-side
+        bubble, so both the layout and the code read these: change them here only.
+    -->
+    <dimen name="og_event_box_header_button_width">40dp</dimen>
+    <dimen name="og_event_box_header_button_gap">2dp</dimen>
+    <dimen name="og_event_box_header_icon_size">38dp</dimen>
+    <dimen name="og_event_box_header_title_margin">10dp</dimen>
+    <dimen name="og_event_box_header_count_margin">8dp</dimen>
+    <!-- Where the open/close scale animation pivots: the middle of the header logo. -->
+    <dimen name="og_event_box_panel_pivot_inset">27dp</dimen>
 </resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Jump to latest" / "Resume" pill over the list. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/og_event_box_accent" />
+    <corners android:radius="14dp" />
+</shape>

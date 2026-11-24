@@ -1,4 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <application>
+        <!--
+            Shares long Event Box logs as a JSON file from the app's cache. Not exported; access is
+            granted per share with FLAG_GRANT_READ_URI_PERMISSION. Own class name, so it never
+            clashes with the host app's own androidx FileProvider.
+        -->
+        <provider
+            android:name="com.ogmediaapps.eventbox.view.OGEventBoxFileProvider"
+            android:authorities="${applicationId}.ogeventbox.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/og_event_box_file_paths" />
+        </provider>
+    </application>
+
 </manifest>

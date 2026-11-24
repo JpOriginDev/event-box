@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Event Box shares long session logs from this cache folder only (see OGEventBoxView.shareVisibleEvents). -->
+<paths>
+    <cache-path name="og_event_box_exports" path="og_event_box/" />
+</paths>

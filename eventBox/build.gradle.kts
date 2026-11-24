@@ -41,6 +41,8 @@ android {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    // Event list in the panel (diffed updates instead of re-binding every row).
+    implementation(libs.androidx.recyclerview)
     // StateFlow is part of the public API (NextGenEventLog.events / isActiveFlow).
     api(libs.kotlinx.coroutines.android)
     testImplementation(libs.junit)

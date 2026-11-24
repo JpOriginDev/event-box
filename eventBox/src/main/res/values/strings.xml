@@ -2,7 +2,7 @@
 <resources>
     <!-- OGEventBox (testing overlay). -->
     <string name="og_event_box_title">EVENTS</string>
-    <string name="og_event_box_clear">CLEAR</string>
+    <string name="og_event_box_clear">CLEAR</string> <!-- Phase 6b: becomes "Clear all events" -->
     <string name="og_event_box_count_zero">0</string>
     <string name="og_event_box_empty">No events yet</string>
     <string name="og_event_box_minimize">Shrink the event log</string>
@@ -12,5 +12,73 @@
     <string name="og_event_box_close">Close the event log</string>
     <string name="og_event_box_warning_description">Warning details</string>
     <string name="og_event_box_warning_title">⚠ Firebase Limits Warning</string>
-    <string name="og_event_box_resize">Resize panel height</string>
+
+    <!-- Search bar. -->
+    <string name="og_event_box_search">Search events</string>
+    <string name="og_event_box_search_close">Close search</string>
+    <string name="og_event_box_search_hint">Search name, key:value, !exclude</string>
+    <string name="og_event_box_search_clear">Clear search text</string>
+    <string name="og_event_box_no_match">No events match</string>
+    <string name="og_event_box_count_filtered">%1$d / %2$d</string>
+
+    <!-- Copy and share. -->
+    <string name="og_event_box_share">Share the visible events</string>
+    <string name="og_event_box_share_title">Share event log</string>
+    <plurals name="og_event_box_share_subject">
+        <item quantity="one">Event Box log (%1$d event)</item>
+        <item quantity="other">Event Box log (%1$d events)</item>
+    </plurals>
+    <string name="og_event_box_share_empty">Nothing to share</string>
+    <string name="og_event_box_copied">Event copied</string>
+    <string name="og_event_box_copy_label">Event Box event</string>
+
+    <!-- Event row. -->
+    <string name="og_event_box_params_title">Parameters:</string>
+    <string name="og_event_box_event_name">Event: %1$s</string>
+    <string name="og_event_box_no_params">  (no parameters)</string>
+    <string name="og_event_box_repeat">×%1$d</string>
+    <string name="og_event_box_row_description">Entry %1$d, %2$s</string>
+    <plurals name="og_event_box_row_params">
+        <item quantity="one">%1$d parameter</item>
+        <item quantity="other">%1$d parameters</item>
+    </plurals>
+    <string name="og_event_box_row_has_warning">has a Firebase warning</string>
+    <string name="og_event_box_row_repeated">fired %1$d times in a row</string>
+    <string name="og_event_box_row_source">from %1$s</string>
+    <string name="og_event_box_row_expand_hint">Tap for details, long-press to copy</string>
+
+    <!-- List status. -->
+    <string name="og_event_box_jump_latest">↓ Latest</string>
+    <plurals name="og_event_box_jump_new">
+        <item quantity="one">↓ %1$d new</item>
+        <item quantity="other">↓ %1$d new</item>
+    </plurals>
+    <string name="og_event_box_resume">▶ Resume</string>
+    <string name="og_event_box_resume_new">▶ Resume (+%1$d)</string>
+    <plurals name="og_event_box_dropped">
+        <item quantity="one">%1$d older event dropped (log keeps %2$d)</item>
+        <item quantity="other">%1$d older events dropped (log keeps %2$d)</item>
+    </plurals>
+    <string name="og_event_box_pause">Pause the list</string>
+    <string name="og_event_box_resume_description">Resume live updates</string>
+
+    <!-- Panel opacity (long-press the panel logo). -->
+    <string name="og_event_box_opacity">Panel opacity %1$d%%</string>
+    <string name="og_event_box_opacity_action">Change panel transparency</string>
+
+    <!-- Undo pill shown after Clear. -->
+    <string name="og_event_box_undo">Undo</string>
+    <plurals name="og_event_box_cleared">
+        <item quantity="one">Cleared %1$d event · UNDO</item>
+        <item quantity="other">Cleared %1$d events · UNDO</item>
+    </plurals>
+
+    <!-- Bottom resize handle. -->
+    <string name="og_event_box_resize_handle">Resize the panel. Double-tap to reset its height</string>
+    <string name="og_event_box_resize_reset">Reset panel height</string>
+
+    <!-- One-time gesture tip shown the first time the panel opens. -->
+    <string name="og_event_box_tip">Tip: tap the logo to shrink · long-press it to change transparency</string>
+    <string name="og_event_box_tip_with_resize">Tip: tap the logo to shrink · long-press it to change transparency · drag the bar at the bottom to resize, double-tap it to reset</string>
+    <string name="og_event_box_resize">Resize panel height</string> <!-- Phase 6b: remove with the header resize button -->
 </resources>

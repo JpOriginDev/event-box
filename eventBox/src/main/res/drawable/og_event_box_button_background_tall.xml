@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Header button background inside a 40dp x 48dp touch target
+    (og_event_box_header_button_width x og_event_box_header_button_height);
+    the visible part stays 32dp x 32dp.
+-->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/og_event_box_button_background"
+    android:insetLeft="4dp"
+    android:insetTop="8dp"
+    android:insetRight="4dp"
+    android:insetBottom="8dp" />

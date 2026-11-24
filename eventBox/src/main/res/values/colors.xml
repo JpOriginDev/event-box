@@ -20,4 +20,8 @@
     <color name="og_event_box_warning_border">#66F59E0B</color>
     <color name="og_event_box_warning_text">#FFFDE047</color>
     <color name="og_event_box_divider">#26FFFFFF</color>
+    <color name="og_event_box_search_highlight">#80F59E0B</color>
+    <color name="og_event_box_hint">#99FFFFFF</color>
+    <color name="og_event_box_user_property">#FF5AA9FF</color>
+    <color name="og_event_box_source">#FFC084FC</color>
 </resources>
