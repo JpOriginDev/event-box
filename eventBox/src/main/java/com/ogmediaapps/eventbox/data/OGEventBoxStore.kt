@@ -15,6 +15,14 @@ internal object OGEventBoxStore {
     private const val KEY_BUBBLE_ON_RIGHT = "og_event_box_bubble_on_right"
     private const val KEY_BUBBLE_Y_RATIO = "og_event_box_bubble_y_ratio"
 
+    // One-time onboarding flags. Kept across debug-mode sessions, so clear() leaves them alone.
+    private const val KEY_GESTURE_TIP_SEEN = "og_event_box_gesture_tip_seen"
+    private const val KEY_RESIZE_USED = "og_event_box_resize_used"
+
+    // Panel preferences the tester picked. Also kept across sessions.
+    private const val KEY_PANEL_HEIGHT_DP = "og_event_box_panel_height_dp"
+    private const val KEY_PANEL_ALPHA = "og_event_box_panel_alpha"
+
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -44,6 +52,47 @@ internal object OGEventBoxStore {
                 putFloat(KEY_BUBBLE_Y_RATIO, position.yRatio.coerceIn(0f, 1f))
             }
         }
+    }
+
+    /** Whether the panel's one-time gesture tip (tap / long-press the logo) was already shown. */
+    fun isGestureTipSeen(context: Context): Boolean = runCatching {
+        prefs(context).getBoolean(KEY_GESTURE_TIP_SEEN, false)
+    }.getOrDefault(true)
+
+    fun setGestureTipSeen(context: Context) {
+        runCatching { prefs(context).edit { putBoolean(KEY_GESTURE_TIP_SEEN, true) } }
+    }
+
+    /** Whether the user has ever dragged the bottom resize handle; until then it pulses on open. */
+    fun isResizeUsed(context: Context): Boolean = runCatching {
+        prefs(context).getBoolean(KEY_RESIZE_USED, false)
+    }.getOrDefault(true)
+
+    fun setResizeUsed(context: Context) {
+        runCatching { prefs(context).edit { putBoolean(KEY_RESIZE_USED, true) } }
+    }
+
+    /** Event list height the tester dragged the panel to, in dp, or `null` for the default. */
+    fun panelHeightDp(context: Context): Float? = runCatching {
+        prefs(context).getFloat(KEY_PANEL_HEIGHT_DP, 0f).takeIf { it > 0f }
+    }.getOrNull()
+
+    /** Saves the panel height, or forgets it when [heightDp] is `null` (back to the default). */
+    fun setPanelHeightDp(context: Context, heightDp: Float?) {
+        runCatching {
+            prefs(context).edit {
+                if (heightDp == null) remove(KEY_PANEL_HEIGHT_DP) else putFloat(KEY_PANEL_HEIGHT_DP, heightDp)
+            }
+        }
+    }
+
+    /** Panel opacity the tester picked by long-pressing the logo, or `null` if they never did. */
+    fun panelAlpha(context: Context): Float? = runCatching {
+        prefs(context).getFloat(KEY_PANEL_ALPHA, 0f).takeIf { it > 0f }
+    }.getOrNull()
+
+    fun setPanelAlpha(context: Context, alpha: Float) {
+        runCatching { prefs(context).edit { putFloat(KEY_PANEL_ALPHA, alpha) } }
     }
 
     /**
