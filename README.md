@@ -18,11 +18,11 @@ Think of it as **Firebase DebugView on the device itself**: no adb, no USB cable
 - No permissions needed (the background overlay is optional and opt-in).
 - `minSdk 21`, pure Kotlin, works from Java too.
 
-> **New in 1.4.0:** search (`is:warning`, `key:value`, `!exclude`), pause, share as JSON, undo for
+> **New in 1.4.2:** search (`is:warning`, `key:value`, `!exclude`), pause, share as JSON, undo for
 > Clear, source tags, duplicate merging, a configurable log size, and a remembered panel height and
 > opacity. The header Resize and Minimize buttons are gone: tap the logo to shrink the panel and
-> drag the bottom handle to resize it. **1.4.2** fixes the header on narrow phones and the open
-> panel in landscape. See the [changelog](CHANGELOG.md).
+> drag the bottom handle to resize it. The header also fits narrow phones, and the open panel stays
+> clear of the navigation bar in landscape. See the [changelog](CHANGELOG.md).
 
 ## Why use Event Box?
 
