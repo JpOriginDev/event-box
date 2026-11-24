@@ -2,6 +2,20 @@
 
 All notable changes to Event Box. Install snippets are in the [README](README.md).
 
+## 1.4.2
+
+Fixes to the panel on small screens and in landscape. No API changes, so upgrading from 1.4.0 needs
+no code changes. (There is no 1.4.1.)
+
+### Fixed
+- **Header on narrow panels**: the five header buttons were a fixed 40 dp wide, so on a narrow
+  phone (or at a large display size) the first or last icon was pushed off the edge. They now share
+  the room left after the logo and count, between 28 dp and 40 dp wide, and keep their 48 dp touch
+  height. The `EVENTS` title still hides first when space is tight.
+- **Landscape**: with the navigation bar on the side, an open panel on the right was drawn under
+  the bar and its logo was cut off. The open panel's window now spans the area between the system
+  bars.
+
 ## 1.4.0
 
 A faster, searchable panel. Everything in the public API is additive: nothing was removed, so

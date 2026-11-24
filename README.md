@@ -8,9 +8,8 @@
 A floating on-screen log for Android testers. A small bubble sits on top of your app; tap it to
 open a panel that shows your analytics events as they fire, so you don't have to watch logcat.
 
-<!-- TODO: record a short GIF (10-15 s) and save it as docs/demo.gif -->
 <p align="center">
-  <img src="docs/demo.gif" alt="Event Box demo: tap the bubble, watch events and Firebase warnings appear live" width="320">
+  <img src="docs/new_event_box.gif" alt="Event Box demo: five taps turn it on, then events and Firebase warnings appear live in the floating panel" width="320">
 </p>
 
 Think of it as **Firebase DebugView on the device itself**: no adb, no USB cable, no logcat filters.
@@ -22,7 +21,8 @@ Think of it as **Firebase DebugView on the device itself**: no adb, no USB cable
 > **New in 1.4.0:** search (`is:warning`, `key:value`, `!exclude`), pause, share as JSON, undo for
 > Clear, source tags, duplicate merging, a configurable log size, and a remembered panel height and
 > opacity. The header Resize and Minimize buttons are gone: tap the logo to shrink the panel and
-> drag the bottom handle to resize it. See the [changelog](CHANGELOG.md).
+> drag the bottom handle to resize it. **1.4.2** fixes the header on narrow phones and the open
+> panel in landscape. See the [changelog](CHANGELOG.md).
 
 ## Why use Event Box?
 
@@ -60,7 +60,8 @@ parameters) are often found only after release.
 - **Source tags**: tell Firebase, AppsFlyer, Mixpanel and other events apart, and search by source.
 - **Resizable, pinnable panel**: drag the bottom handle to change the height (double-tap it to
   reset), pin to keep it open. Adjustable opacity, 48 dp touch targets, haptic feedback, and a
-  width cap on tablets. The height and opacity you pick are remembered.
+  width cap on tablets. The height and opacity you pick are remembered. The header fits narrow
+  phones, and the open panel stays clear of the system bars in landscape.
 - **Accessible**: TalkBack labels for every control, including the logo's tap and long-press,
   the resize handle (reset as its action) and the undo pill.
 - **Background overlay** (optional): keep the box visible when your app is in the background or in
@@ -90,7 +91,7 @@ In your app's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.github.JpOriginDev:event-box:1.4.0")
+    implementation("com.github.JpOriginDev:event-box:1.4.2")
 }
 ```
 
@@ -281,7 +282,12 @@ OGEventBoxLog.setPanelResizingEnabled(false);
   the session.
 
 The header reads `[Logo] [Count] … [Search] [Pause] [Share] [Pin] [Clear]`, mirrored when the
-bubble is on the right edge. On narrow phones the `EVENTS` title hides itself to make room.
+bubble is on the right edge. On narrow phones the `EVENTS` title hides itself first, and if that is
+still not enough the five buttons shrink (28 dp to 40 dp wide, still 48 dp tall) to share the
+space, so none of them is ever pushed off the edge.
+
+The open panel stays between the system bars: in landscape it is not drawn under the navigation
+bar, whichever side the bubble is on.
 
 The panel height and transparency you pick are remembered on the device, across app restarts and
 debug-mode sessions. A transparency picked by long-press overrides `setPanelAlpha(...)`.

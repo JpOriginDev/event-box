@@ -144,8 +144,9 @@ Activity changes: `isCollapsed`, `isPinned`, `anchorX/anchorY`, `lastSeenIndex` 
    `NOT_FOCUSABLE | NOT_TOUCH_MODAL | LAYOUT_IN_SCREEN | HARDWARE_ACCELERATED`,
    `gravity TOP|START`, `token = activity.window.attributes.token`.
 2. **Position = window x/y/width.** `moveTo` mutates `LayoutParams.x/y/width` and calls
-   `updateViewLayout` once. Width is the exact bubble width while collapsed and the screen width
-   while expanded. Resizing in the *same* update as the move is what keeps a right-side bubble
+   `updateViewLayout` once. Width is the exact bubble width while collapsed and, while expanded,
+   the screen width minus the left and right system-bar insets (x is the left inset), so a panel
+   on the right is never drawn under a side navigation bar in landscape. Resizing in the *same* update as the move is what keeps a right-side bubble
    from visibly sliding when the panel opens or closes. In fallback mode it sets `translationX/Y`.
 3. **Collapse / expand.** The panel scales and fades around a pivot at the bubble's corner. On
    the right side the bubble stays `INVISIBLE` until the window has shrunk and moved
@@ -154,6 +155,10 @@ Activity changes: `isCollapsed`, `isPinned`, `anchorX/anchorY`, `lastSeenIndex` 
 4. **Header mirroring.** `applyHeaderOrientation` re-adds header children in mirrored order when
    the bubble is on the right, so the logo always sits next to the bubble. Every size comes from
    the `og_event_box_header_*` dimens, which the layout uses too, so the two cannot drift apart.
+   On narrow panels `fitHeaderTitle` first drops the title (measured with full-size buttons, so the
+   decision does not flip as they shrink), then `fitHeaderButtons` splits the remaining width over
+   the five buttons, clamped to 28 dp..`og_event_box_header_button_width`, and trims their side
+   padding to match. Both run from the header's layout-change listener.
 5. **Snapping.** `snapPosition` = `clampPosition` (inside system-bar insets); for the collapsed
    bubble x is forced to the nearer rail. Settling uses a `ValueAnimator` (`animateTo`) because
    a window cannot be moved by a view animator.
@@ -258,4 +263,6 @@ End of session (any of)
 - Validator counters are process-wide and reset on `clear()` / `disable()`.
 - Tests are JVM unit tests (models, ViewModel, validator, fluent API, Java interop). Overlay
   behaviour is verified manually: enable, drag to both edges, open/close the panel on each side,
-  resize both ways, rotate, open a dialog, drop on the close target, swipe from Recents.
+  resize both ways, rotate (portrait and landscape, bubble on either side), open a dialog, drop on
+  the close target, swipe from Recents. Check the header on a narrow phone and at a large font or
+  display size.
