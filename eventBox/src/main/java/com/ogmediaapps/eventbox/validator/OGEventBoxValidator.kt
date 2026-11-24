@@ -1,6 +1,7 @@
 package com.ogmediaapps.eventbox.validator
 
 import java.util.Calendar
+import java.util.Collections
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -64,8 +65,9 @@ object OGEventBoxValidator {
         "user_engagement"
     )
 
-    private val distinctCustomEvents = ConcurrentHashMap.newKeySet<String>()
-    private val distinctUserProperties = ConcurrentHashMap.newKeySet<String>()
+    // newSetFromMap rather than ConcurrentHashMap.newKeySet, which needs API 24 (minSdk is 21).
+    private val distinctCustomEvents: MutableSet<String> = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
+    private val distinctUserProperties: MutableSet<String> = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
 
     private val dailyEventCount = AtomicInteger(0)
     @Volatile
