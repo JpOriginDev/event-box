@@ -2,7 +2,7 @@
 <resources>
     <!-- OGEventBox (testing overlay). -->
     <string name="og_event_box_title">EVENTS</string>
-    <string name="og_event_box_clear">CLEAR</string> <!-- Phase 6b: becomes "Clear all events" -->
+    <string name="og_event_box_clear">Clear all events</string>
     <string name="og_event_box_count_zero">0</string>
     <string name="og_event_box_empty">No events yet</string>
     <string name="og_event_box_minimize">Shrink the event log</string>
@@ -80,5 +80,4 @@
     <!-- One-time gesture tip shown the first time the panel opens. -->
     <string name="og_event_box_tip">Tip: tap the logo to shrink · long-press it to change transparency</string>
     <string name="og_event_box_tip_with_resize">Tip: tap the logo to shrink · long-press it to change transparency · drag the bar at the bottom to resize, double-tap it to reset</string>
-    <string name="og_event_box_resize">Resize panel height</string> <!-- Phase 6b: remove with the header resize button -->
 </resources>

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- One row of the OGEventBox list (RecyclerView item). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/og_event_box_item_root"
@@ -13,8 +14,24 @@
         android:id="@+id/og_event_box_item_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="?android:attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
         android:gravity="center_vertical"
+        android:longClickable="true"
+        android:minHeight="32dp"
         android:orientation="horizontal">
+
+        <!-- Kind of entry at a glance: amber = warning, blue = user property, none = event. -->
+        <View
+            android:id="@+id/og_event_box_item_stripe"
+            android:layout_width="3dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/og_event_box_stripe_background"
+            android:importantForAccessibility="no"
+            android:visibility="invisible"
+            tools:visibility="visible" />
 
         <TextView
             android:id="@+id/og_event_box_item_text"
@@ -22,10 +39,29 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:fontFamily="monospace"
+            android:importantForAccessibility="no"
             android:maxLines="2"
             android:textColor="@color/og_event_box_name"
             android:textSize="12sp"
-            tools:text="01  14:55:00  main_activity_created" />
+            tools:text="01  14:55:00 +1.2s  main_activity_created" />
+
+        <TextView
+            android:id="@+id/og_event_box_item_repeat"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/og_event_box_repeat_background"
+            android:importantForAccessibility="no"
+            android:paddingStart="6dp"
+            android:paddingTop="1dp"
+            android:paddingEnd="6dp"
+            android:paddingBottom="1dp"
+            android:textColor="@color/og_event_box_on_accent"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:text="×3"
+            tools:visibility="visible" />
 
         <ImageView
             android:id="@+id/og_event_box_item_warning"
@@ -58,30 +94,53 @@
         tools:visibility="visible">
 
         <TextView
+            android:id="@+id/og_event_box_item_warning_event_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:textColor="@color/og_event_box_name"
+            android:textIsSelectable="false"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            tools:text="Event: event_box_enabled_via_consecutive_clicks" />
+
+        <TextView
+            android:id="@+id/og_event_box_item_params_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/og_event_box_params_title"
+            android:textColor="@color/og_event_box_time"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <!-- Key/value table: monospace with padded keys, value type tag at the end. -->
+        <TextView
+            android:id="@+id/og_event_box_item_params_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:fontFamily="monospace"
+            android:lineSpacingMultiplier="1.2"
+            android:textColor="@color/og_event_box_name"
+            android:textSize="11sp"
+            tools:text="  place  : splash_open  S\n  action : request      S" />
+
+        <TextView
             android:id="@+id/og_event_box_item_warning_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
             android:text="@string/og_event_box_warning_title"
             android:textColor="@color/og_event_box_warning"
             android:textSize="11sp"
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/og_event_box_item_warning_event_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:fontFamily="monospace"
-            android:textColor="@color/og_event_box_name"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            tools:text="Event: event_box_enabled_via_consecutive_clicks" />
-
-        <TextView
             android:id="@+id/og_event_box_item_warning_message"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="2dp"
             android:lineSpacingMultiplier="1.2"
             android:textColor="@color/og_event_box_warning_text"
             android:textSize="11sp"
