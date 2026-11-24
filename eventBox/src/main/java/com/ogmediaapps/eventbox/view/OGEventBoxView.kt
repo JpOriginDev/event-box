@@ -952,7 +952,10 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
 
         if (!headerFitWatched) {
             headerFitWatched = true
-            header.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> fitHeaderTitle() }
+            header.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                fitHeaderButtons()
+                fitHeaderTitle()
+            }
         }
     }
 
@@ -972,7 +975,8 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
             if (child.visibility == View.GONE || child === headerSpacer) continue
             val lp = child.layoutParams as? LinearLayout.LayoutParams
             // The natural width, not the measured one: an overflowing row squeezes its last children.
-            val natural = if ((lp?.width ?: 0) > 0) lp!!.width else {
+            // Buttons count at full size here so the title decision doesn't flip as they shrink.
+            val natural = if (child in headerButtons) headerButtonWidth else if ((lp?.width ?: 0) > 0) lp!!.width else {
                 val unspecified = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
                 child.measure(unspecified, unspecified)
                 child.measuredWidth
@@ -981,6 +985,47 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         }
         val fits = if (titleView.isVisible) used <= available else used + titleNeed <= available
         if (titleView.isVisible != fits) post { titleView.isVisible = fits }
+    }
+
+    private val headerButtons get() = listOf(searchButton, pauseButton, shareButton, pinButton, clearButton)
+
+    /**
+     * On very narrow panels (small screens, large font or display size) the five header buttons
+     * share whatever room is left instead of running off the edge. They never grow past
+     * [headerButtonWidth] and never shrink below [HEADER_BUTTON_MIN_WIDTH_DP].
+     */
+    private fun fitHeaderButtons() {
+        val available = header.width - header.paddingLeft - header.paddingRight
+        if (available <= 0) return
+        val buttons = headerButtons
+        var fixed = 0
+        for (i in 0 until header.childCount) {
+            val child = header.getChildAt(i)
+            if (child.visibility == View.GONE || child === headerSpacer || child === titleView || child in buttons) continue
+            val lp = child.layoutParams as? LinearLayout.LayoutParams
+            val natural = if ((lp?.width ?: 0) > 0) lp!!.width else {
+                val unspecified = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
+                child.measure(unspecified, unspecified)
+                child.measuredWidth
+            }
+            fixed += natural + (lp?.marginStart ?: 0) + (lp?.marginEnd ?: 0)
+        }
+        val gaps = buttons.sumOf { (it.layoutParams as? LinearLayout.LayoutParams)?.marginStart ?: 0 }
+        val minWidth = (HEADER_BUTTON_MIN_WIDTH_DP * resources.displayMetrics.density).roundToInt()
+        val target = ((available - fixed - gaps) / buttons.size).coerceIn(minWidth, headerButtonWidth)
+        // Icon is 48dp tall minus 14dp padding top and bottom; keep side padding from squeezing it.
+        val iconSide = headerButtonHeight - buttons.first().paddingTop * 2
+        val sidePad = ((target - iconSide) / 2).coerceIn(0, buttons.first().paddingTop)
+        for (b in buttons) {
+            val lp = b.layoutParams as? LinearLayout.LayoutParams ?: continue
+            if (lp.width != target) {
+                lp.width = target
+                b.layoutParams = lp
+            }
+            if (b.paddingLeft != sidePad || b.paddingRight != sidePad) {
+                b.setPadding(sidePad, b.paddingTop, sidePad, b.paddingBottom)
+            }
+        }
     }
 
     private fun collapse(animate: Boolean) {
@@ -1175,7 +1220,8 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
 
     private fun applyCollapsedState(collapsed: Boolean) {
         // Full width on phones, capped on tablets and in landscape and kept on the bubble's side.
-        val panelWidth = min(screenWidth() - marginPx * 2, maxPanelWidthPx)
+        val barInsets = systemBarInsets()
+        val panelWidth = min(screenWidth() - barInsets.left - barInsets.right - marginPx * 2, maxPanelWidthPx)
         val panelLp = panel.layoutParams as LayoutParams
         val panelGravity = Gravity.TOP or (if (isBubbleOnRightSide()) Gravity.END else Gravity.START)
         if (panelWidth > 0 && (panelLp.width != panelWidth || panelLp.gravity != panelGravity)) {
@@ -1661,13 +1707,16 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
             translationY = y
             return
         }
-        val newX = x.roundToInt()
+        // Open panel: the window spans the area between the system bars (in landscape the
+        // navigation bar sits on a side), so the panel never slides under them.
+        val barInsets = systemBarInsets()
+        val newX = if (viewModel.isCollapsed) x.roundToInt() else barInsets.left
         val newY = y.roundToInt()
         // Resize the window in the same update as the move, so a right-side bubble expanding
         // doesn't first jump across the screen at bubble width and then grow (reads as a slide).
         // Collapsed uses an exact bubble width (not WRAP_CONTENT) so the shrink needs no layout pass.
         val newWidth = if (viewModel.isCollapsed) bubbleTotalWidth()
-        else screenWidth().takeIf { it > 0 } ?: WindowManager.LayoutParams.WRAP_CONTENT
+        else (screenWidth() - barInsets.left - barInsets.right).takeIf { it > 0 } ?: WindowManager.LayoutParams.WRAP_CONTENT
         if (params.x == newX && params.y == newY && params.width == newWidth) return
         params.width = newWidth
         params.x = newX
@@ -1757,6 +1806,7 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         private const val CLOSE_TARGET_REVEAL_HEIGHT = 0.22f
         private const val CLOSE_TARGET_HIDE_SLACK = 1.15f
         private const val DEFAULT_ON_RIGHT_EDGE = true
+        private const val HEADER_BUTTON_MIN_WIDTH_DP = 28f
         private const val DEFAULT_Y_RATIO = 0f
         private val PANEL_ALPHA_STEPS = floatArrayOf(1f, 0.85f, 0.7f, 0.6f)
         private const val MAX_SHARE_TEXT_CHARS = 100_000
