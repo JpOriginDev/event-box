@@ -2,7 +2,10 @@
 
 All notable changes to Event Box. Install snippets are in the [README](README.md).
 
-## Unreleased
+## 1.5.0
+
+New options for what the box shows and where, plus the clock button and the quota notice. Everything
+is additive, so upgrading from 1.4.2 needs no code changes. One default changed: see **Changed**.
 
 ### Added
 - **Delta-time button**: a clock button in the header shows or hides the "+1.2s" time since the

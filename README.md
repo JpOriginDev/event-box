@@ -18,7 +18,7 @@ Think of it as **Firebase DebugView on the device itself**: no adb, no USB cable
 - No permissions needed (the background overlay is optional and opt-in).
 - `minSdk 21`, pure Kotlin, works from Java too.
 
-> **Latest (next release):**
+> **New in 1.5.0:**
 > - **Clock button**: show the time since the previous event on each row (`+1.2s`). It is **off by
 >   default**; turn it on in code.
 > - **Parameter stripe**: rows that carry parameters get a teal stripe.
@@ -106,7 +106,7 @@ In your app's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.github.JpOriginDev:event-box:1.4.2")
+    implementation("com.github.JpOriginDev:event-box:1.5.0")
 }
 ```
 

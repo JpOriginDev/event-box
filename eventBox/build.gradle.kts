@@ -62,7 +62,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.JpOriginDev"
                 artifactId = "event-box"
-                version = System.getenv("VERSION") ?: "1.4.2" // JitPack sets VERSION to the git tag
+                version = System.getenv("VERSION") ?: "1.5.0" // JitPack sets VERSION to the git tag
 
                 pom {
                     name.set("Event Box")
