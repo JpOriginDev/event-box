@@ -14,8 +14,16 @@ All notable changes to Event Box. Install snippets are in the [README](README.md
 - **Components and start state**: `setComponentVisible`, `hideComponents`, `showComponents`,
   `showOnly` and `setStartState` choose what the box shows and how it opens.
 - **Bubble style and panel opacity**: `setBubbleStyle` and `setPanelAlpha`.
+- **Quota notice**: a small amber pill at the top of the list reads `Over Firebase limit · events
+  501/500` (or `user props 26/25`) once more than 500 distinct event names or 25 user properties
+  have been seen. It only appears while `firebaseChecksEnabled` is true.
+- **System event names**: logging a name Firebase collects itself (`first_open`, `session_start`,
+  ...) now gets a warning on its row. `screen_view` is not flagged. Only active while
+  `firebaseChecksEnabled` is true.
 
 ### Changed
+- The delta-time button and the "+time" on rows are now **off by default**. Turn them on with
+  `setDeltaTimeButtonVisible(true)` and `setDeltaTimeShown(true)`.
 - The six header buttons sit in a horizontally scrolling row, so all of them stay reachable on
   narrow screens.
 
