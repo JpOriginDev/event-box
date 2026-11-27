@@ -8,6 +8,25 @@ import static org.junit.Assert.*;
 public class OGEventBoxJavaInteropTest {
 
     @Test
+    public void testJavaBubbleStyleBuilder() {
+        OGEventBoxLog.setBubbleStyle(
+            new com.ogmediaapps.eventbox.model.OGEventBoxBubbleStyle.Builder()
+                .iconRes(321)
+                .iconScaleType(ImageView.ScaleType.CENTER_CROP)
+                .backgroundColor(0xFF0D9379)
+                .borderWidthDp(1.5f)
+                .fullyRound()
+                .build());
+
+        com.ogmediaapps.eventbox.model.OGEventBoxBubbleStyle style = OGEventBoxLog.getBubbleStyle();
+        assertEquals(321, style.getIconRes());
+        assertEquals(ImageView.ScaleType.CENTER_CROP, style.getIconScaleType());
+        assertEquals(1.5f, style.getBorderWidthDp(), 0.001f);
+
+        OGEventBoxLog.setBubbleStyle(com.ogmediaapps.eventbox.model.OGEventBoxBubbleStyle.DEFAULT);
+    }
+
+    @Test
     public void testJavaFluentBubbleStyling() {
         OGEventBoxLog.setBubbleIconResId(123)
             .setBubbleIconScaleType(ImageView.ScaleType.CENTER_CROP)

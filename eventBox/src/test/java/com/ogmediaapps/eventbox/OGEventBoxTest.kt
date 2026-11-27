@@ -6,10 +6,22 @@ import com.ogmediaapps.eventbox.model.OGEventBoxUiState
 import com.ogmediaapps.eventbox.viewmodel.OGEventBoxViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.After
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 class OGEventBoxTest {
+
+    // The options live in a singleton, so every test starts from (and leaves) the documented defaults.
+    @Before
+    @After
+    fun restoreDefaultOptions() {
+        OGEventBoxLog.showComponents(*com.ogmediaapps.eventbox.model.OGEventBoxComponent.values())
+            .hideComponents(com.ogmediaapps.eventbox.model.OGEventBoxComponent.DELTA_TIME_BUTTON)
+            .setStartState(expanded = false, pinned = false, deltaTimeShown = false)
+    }
 
     @Test
     fun testEventModelCreation() {
@@ -164,6 +176,215 @@ class OGEventBoxTest {
         // Reset
         OGEventBoxLog.setFirebaseChecksEnabled(true)
         assertTrue(OGEventBoxLog.isFirebaseChecksEnabled())
+    }
+
+    @Test
+    fun testHeaderButtonVisibilityOptions() {
+        // All shown by default, except the clock button, which starts hidden.
+        assertTrue(OGEventBoxLog.isClearButtonVisible())
+        assertTrue(OGEventBoxLog.isPinButtonVisible())
+        assertTrue(OGEventBoxLog.isShareButtonVisible())
+        assertTrue(OGEventBoxLog.isPauseButtonVisible())
+        assertTrue(OGEventBoxLog.isSearchButtonVisible())
+        assertFalse(OGEventBoxLog.isDeltaTimeButtonVisible())
+
+        OGEventBoxLog.setShareButtonVisible(false).setDeltaTimeButtonVisible(false)
+        assertFalse(OGEventBoxLog.isShareButtonVisible())
+        assertFalse(OGEventBoxLog.shareButtonVisible)
+        assertFalse(OGEventBoxLog.isDeltaTimeButtonVisible())
+        assertTrue(OGEventBoxLog.isClearButtonVisible())
+
+        OGEventBoxLog.setShareButtonVisible(true).setDeltaTimeButtonVisible(true)
+        assertTrue(OGEventBoxLog.isShareButtonVisible())
+        assertTrue(OGEventBoxLog.isDeltaTimeButtonVisible())
+    }
+
+    @Test
+    fun testDeltaTimeDefaultOption() {
+        // Off by default.
+        assertFalse(OGEventBoxLog.isDeltaTimeShown())
+        OGEventBoxLog.setDeltaTimeShown(true)
+        assertTrue(OGEventBoxLog.isDeltaTimeShown())
+        assertTrue(OGEventBoxLog.deltaTimeShown)
+        OGEventBoxLog.setDeltaTimeShown(false)
+        assertFalse(OGEventBoxLog.isDeltaTimeShown())
+    }
+
+    @Test
+    fun testPinnedByDefaultOption() {
+        assertFalse(OGEventBoxLog.isPinnedByDefault())
+        OGEventBoxLog.setPinnedByDefault(true)
+        assertTrue(OGEventBoxLog.isPinnedByDefault())
+        assertTrue(com.ogmediaapps.eventbox.viewmodel.OGEventBoxViewModel().isPinned)
+        OGEventBoxLog.setPinnedByDefault(false)
+        assertFalse(com.ogmediaapps.eventbox.viewmodel.OGEventBoxViewModel().isPinned)
+    }
+
+    @Test
+    fun testExpandedByDefaultOption() {
+        assertFalse(OGEventBoxLog.isExpandedByDefault())
+        assertTrue(com.ogmediaapps.eventbox.viewmodel.OGEventBoxViewModel().isCollapsed)
+        OGEventBoxLog.setExpandedByDefault(true)
+        assertTrue(OGEventBoxLog.isExpandedByDefault())
+        assertFalse(com.ogmediaapps.eventbox.viewmodel.OGEventBoxViewModel().isCollapsed)
+        OGEventBoxLog.setExpandedByDefault(false)
+        assertTrue(com.ogmediaapps.eventbox.viewmodel.OGEventBoxViewModel().isCollapsed)
+    }
+
+    @Test
+    fun testComponentVisibilityApi() {
+        val c = com.ogmediaapps.eventbox.model.OGEventBoxComponent.values()
+        // Everything is shown by default, except the clock button.
+        c.filter { it != com.ogmediaapps.eventbox.model.OGEventBoxComponent.DELTA_TIME_BUTTON }
+            .forEach { assertTrue(OGEventBoxLog.isComponentVisible(it)) }
+        assertFalse(OGEventBoxLog.isComponentVisible(com.ogmediaapps.eventbox.model.OGEventBoxComponent.DELTA_TIME_BUTTON))
+
+        OGEventBoxLog.hideComponents(
+            com.ogmediaapps.eventbox.model.OGEventBoxComponent.TITLE,
+            com.ogmediaapps.eventbox.model.OGEventBoxComponent.UNREAD_BADGE,
+        )
+        assertFalse(OGEventBoxLog.isComponentVisible(com.ogmediaapps.eventbox.model.OGEventBoxComponent.TITLE))
+        assertFalse(OGEventBoxLog.isComponentVisible(com.ogmediaapps.eventbox.model.OGEventBoxComponent.UNREAD_BADGE))
+        assertTrue(OGEventBoxLog.isComponentVisible(com.ogmediaapps.eventbox.model.OGEventBoxComponent.LOGO))
+
+        // The six button shortcuts are the same switch as the generic API.
+        OGEventBoxLog.setPinButtonVisible(false)
+        assertFalse(OGEventBoxLog.isComponentVisible(com.ogmediaapps.eventbox.model.OGEventBoxComponent.PIN_BUTTON))
+
+        // RESIZE_HANDLE is the same switch as setPanelResizingEnabled.
+        OGEventBoxLog.setComponentVisible(com.ogmediaapps.eventbox.model.OGEventBoxComponent.RESIZE_HANDLE, false)
+        assertFalse(OGEventBoxLog.isPanelResizingEnabled())
+
+        OGEventBoxLog.showOnly(com.ogmediaapps.eventbox.model.OGEventBoxComponent.CLEAR_BUTTON)
+        assertTrue(OGEventBoxLog.isClearButtonVisible())
+        assertFalse(OGEventBoxLog.isShareButtonVisible())
+        assertFalse(OGEventBoxLog.isPanelResizingEnabled())
+
+        OGEventBoxLog.showComponents(*c)
+        c.forEach { assertTrue(OGEventBoxLog.isComponentVisible(it)) }
+        assertTrue(OGEventBoxLog.isPanelResizingEnabled())
+    }
+
+    @Test
+    fun testSetStartStateKeepsUnspecifiedValues() {
+        OGEventBoxLog.setStartState(expanded = true, pinned = true, deltaTimeShown = false)
+        assertTrue(OGEventBoxLog.isExpandedByDefault())
+        assertTrue(OGEventBoxLog.isPinnedByDefault())
+        assertFalse(OGEventBoxLog.isDeltaTimeShown())
+
+        OGEventBoxLog.setStartState(pinned = false)
+        assertTrue(OGEventBoxLog.isExpandedByDefault())
+        assertFalse(OGEventBoxLog.isPinnedByDefault())
+        assertFalse(OGEventBoxLog.isDeltaTimeShown())
+
+        OGEventBoxLog.setStartState(expanded = false, deltaTimeShown = true)
+        assertFalse(OGEventBoxLog.isExpandedByDefault())
+        assertTrue(OGEventBoxLog.isDeltaTimeShown())
+    }
+
+    @Test
+    fun testAvailabilityAllowsMatrix() {
+        val a = com.ogmediaapps.eventbox.model.OGEventBoxAvailability.values().associateWith { it }
+        val debug = true
+        val release = false
+        assertTrue(a.getValue(com.ogmediaapps.eventbox.model.OGEventBoxAvailability.DEBUG_ONLY).allows(debug))
+        assertFalse(a.getValue(com.ogmediaapps.eventbox.model.OGEventBoxAvailability.DEBUG_ONLY).allows(release))
+        assertFalse(a.getValue(com.ogmediaapps.eventbox.model.OGEventBoxAvailability.RELEASE_ONLY).allows(debug))
+        assertTrue(a.getValue(com.ogmediaapps.eventbox.model.OGEventBoxAvailability.RELEASE_ONLY).allows(release))
+        assertTrue(a.getValue(com.ogmediaapps.eventbox.model.OGEventBoxAvailability.DEBUG_AND_RELEASE).allows(debug))
+        assertTrue(a.getValue(com.ogmediaapps.eventbox.model.OGEventBoxAvailability.DEBUG_AND_RELEASE).allows(release))
+        assertFalse(a.getValue(com.ogmediaapps.eventbox.model.OGEventBoxAvailability.NEVER).allows(debug))
+        assertFalse(a.getValue(com.ogmediaapps.eventbox.model.OGEventBoxAvailability.NEVER).allows(release))
+    }
+
+    @Test
+    fun testSetAvailabilityAndDeprecatedFlagStayCompatible() {
+        OGEventBoxLog.setAvailability(com.ogmediaapps.eventbox.model.OGEventBoxAvailability.DEBUG_ONLY)
+        assertEquals(com.ogmediaapps.eventbox.model.OGEventBoxAvailability.DEBUG_ONLY, OGEventBoxLog.getAvailability())
+
+        // The old flag still works and, being called last, wins.
+        @Suppress("DEPRECATION")
+        OGEventBoxLog.setDebugModeEnabled(true)
+        assertNull(OGEventBoxLog.getAvailability())
+        assertTrue(OGEventBoxLog.debugModeEnabled)
+
+        @Suppress("DEPRECATION")
+        OGEventBoxLog.setDebugModeEnabled(false)
+        assertFalse(OGEventBoxLog.debugModeEnabled)
+    }
+
+    @Test
+    fun testBubbleStyleBuilderAndLambda() {
+        OGEventBoxLog.setBubbleStyle(
+            com.ogmediaapps.eventbox.model.OGEventBoxBubbleStyle.Builder()
+                .iconRes(7)
+                .backgroundColor(0xFF112233.toInt())
+                .borderColor(0xFF445566.toInt())
+                .borderWidthDp(2f)
+                .cornerRadiusDp(10f)
+                .build()
+        )
+        var s = OGEventBoxLog.getBubbleStyle()
+        assertEquals(7, s.iconRes)
+        assertEquals(0xFF112233.toInt(), s.backgroundColor)
+        assertEquals(2f, s.borderWidthDp, 0.001f)
+        assertEquals(10f, s.cornerRadiusDp, 0.001f)
+
+        // The lambda form changes only what it sets.
+        OGEventBoxLog.setBubbleStyle {
+            fullyRound()
+            noBorder()
+        }
+        s = OGEventBoxLog.getBubbleStyle()
+        assertEquals(7, s.iconRes)
+        assertEquals(0xFF112233.toInt(), s.backgroundColor)
+        assertEquals(0f, s.borderWidthDp, 0.001f)
+        assertEquals(-1f, s.cornerRadiusDp, 0.001f)
+
+        OGEventBoxLog.setBubbleStyle(com.ogmediaapps.eventbox.model.OGEventBoxBubbleStyle.DEFAULT)
+        s = OGEventBoxLog.getBubbleStyle()
+        assertEquals(0, s.iconRes)
+        assertEquals(0, s.backgroundColor)
+        assertEquals(-1f, s.borderWidthDp, 0.001f)
+    }
+
+    @Test
+    fun testDeprecatedBubbleSettersStillWriteTheSameStyle() {
+        @Suppress("DEPRECATION")
+        OGEventBoxLog
+            .setBubbleIconResId(5)
+            .setBubbleBorderWidthDp(3f)
+            .setBubbleCornerRadiusDp(4f)
+        val s = OGEventBoxLog.getBubbleStyle()
+        assertEquals(5, s.iconRes)
+        assertEquals(3f, s.borderWidthDp, 0.001f)
+        assertEquals(4f, s.cornerRadiusDp, 0.001f)
+        OGEventBoxLog.setBubbleStyle(com.ogmediaapps.eventbox.model.OGEventBoxBubbleStyle.DEFAULT)
+    }
+
+    @Test
+    fun testRememberUserChoicesOptionDefaultsOn() {
+        assertTrue(OGEventBoxLog.isRememberUserChoices())
+        OGEventBoxLog.setRememberUserChoices(false)
+        assertFalse(OGEventBoxLog.isRememberUserChoices())
+        assertFalse(OGEventBoxLog.rememberUserChoices)
+        OGEventBoxLog.setRememberUserChoices(true)
+        assertTrue(OGEventBoxLog.isRememberUserChoices())
+    }
+
+    @Test
+    fun testResetSessionStateWithoutContextUsesHostDefaults() {
+        OGEventBoxLog.setExpandedByDefault(true).setPinnedByDefault(true)
+        val vm = com.ogmediaapps.eventbox.viewmodel.OGEventBoxViewModel()
+        vm.collapse()
+        vm.togglePin()
+        vm.resetSessionState()
+        assertFalse(vm.isCollapsed)
+        assertTrue(vm.isPinned)
+        OGEventBoxLog.setExpandedByDefault(false).setPinnedByDefault(false)
+        vm.resetSessionState()
+        assertTrue(vm.isCollapsed)
+        assertFalse(vm.isPinned)
     }
 
     @Test

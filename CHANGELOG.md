@@ -2,6 +2,32 @@
 
 All notable changes to Event Box. Install snippets are in the [README](README.md).
 
+## Unreleased
+
+### Added
+- **Delta-time button**: a clock button in the header shows or hides the "+1.2s" time since the
+  previous event on every row. The choice is remembered. Control it from code with
+  `setDeltaTimeShown`, `setDeltaTimeButtonVisible` and `setStartState(deltaTimeShown = ...)`.
+- **Parameters stripe**: rows that carry parameters get a teal stripe on the left.
+- **Availability**: `setAvailability(OGEventBoxAvailability)` replaces passing `BuildConfig.DEBUG`
+  and also supports `RELEASE_ONLY`, `DEBUG_AND_RELEASE` and `NEVER`.
+- **Components and start state**: `setComponentVisible`, `hideComponents`, `showComponents`,
+  `showOnly` and `setStartState` choose what the box shows and how it opens.
+- **Bubble style and panel opacity**: `setBubbleStyle` and `setPanelAlpha`.
+
+### Changed
+- The six header buttons sit in a horizontally scrolling row, so all of them stay reachable on
+  narrow screens.
+
+### Deprecated
+- `setDebugModeEnabled` (use `setAvailability`) and the individual `setBubble*` setters (use
+  `setBubbleStyle`). Both still work.
+
+### Internal
+- Cleanup with no behaviour change: unused code removed, view constants and the share and
+  close-target code moved to their own files, shared `safely` / `safeOr` helpers, and explicit-API
+  warnings enabled for the library.
+
 ## 1.4.2
 
 Fixes to the panel on small screens and in landscape. No API changes, so upgrading from 1.4.0 needs

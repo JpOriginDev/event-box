@@ -103,20 +103,38 @@ Call this once in your `Application.onCreate()`:
 
 **Kotlin**
 ```kotlin
-OGEventBoxLog.setDebugModeEnabled(BuildConfig.DEBUG)
+OGEventBoxLog.setAvailability(OGEventBoxAvailability.DEBUG_ONLY)
     .setDebugModeDurationHours(0.5)
     .install(this)
 ```
 
 **Java**
 ```java
-OGEventBoxLog.setDebugModeEnabled(BuildConfig.DEBUG)
+OGEventBoxLog.setAvailability(OGEventBoxAvailability.DEBUG_ONLY)
     .setDebugModeDurationHours(0.5)
     .install(this);
 ```
 
-- `setDebugModeEnabled` is your kill switch. When `false`, the box can never appear.
+- `setAvailability` chooses the builds where the box may appear. It reads the build kind from your app
+  (its `debuggable` flag), so you do not pass `BuildConfig.DEBUG`:
+
+  | Value | Debug build | Release build |
+  |---|---|---|
+  | `DEBUG_ONLY` | shown | hidden |
+  | `RELEASE_ONLY` | hidden | shown |
+  | `DEBUG_AND_RELEASE` | shown | shown |
+  | `NEVER` | hidden | hidden |
+
+  Hidden means the box can never appear and `log()` does nothing. Without `setAvailability` it stays off.
+  The old `setDebugModeEnabled(Boolean)` still works but is deprecated; replace it with `setAvailability`.
 - `setDebugModeDurationHours` is how long a session lasts (here, 30 minutes).
+- `install(this)` leaves the box off until a tester switches it on. Use `installAndShow(this)` instead to
+  start a session straight away, so the box shows on launch. It still respects `setAvailability`.
+- The box remembers what the tester does by hand (on by default, `setRememberUserChoices(false)` turns it off):
+  a box they minimized stays a bubble until they open it again, and a box they closed (dropped on the close
+  target) does not start again by itself, even in `installAndShow`, until the app's data is cleared. Switching
+  it on with `setEnabled(context, true)` counts as a new decision and works again. `resetUserChoices(context)`
+  forgets both, for QA.
 
 ## 3. Turn it on
 
@@ -297,13 +315,15 @@ debug-mode sessions. A transparency picked by long-press overrides `setPanelAlph
 Call these before `install()`:
 
 ```kotlin
-OGEventBoxLog.setBubbleIconResId(R.mipmap.my_logo)
-    .setBubbleIconScaleType(ImageView.ScaleType.CENTER_CROP)
-    .setBubbleBackgroundColor(Color.parseColor("#0D9379"))
-    .setBubbleBorderColor(Color.parseColor("#CCE6E1"))
-    .setBubbleBorderWidthDp(1.5f)
-    .setBubbleCornerRadiusDp(-1f) // -1 = fully round
-    .setDebugModeEnabled(BuildConfig.DEBUG)
+OGEventBoxLog.setBubbleStyle {
+    iconRes(R.mipmap.my_logo)
+    iconScaleType(ImageView.ScaleType.CENTER_CROP)
+    backgroundColor(Color.parseColor("#0D9379"))
+    borderColor(Color.parseColor("#CCE6E1"))
+    borderWidthDp(1.5f)
+    fullyRound()
+}
+    .setAvailability(OGEventBoxAvailability.DEBUG_ONLY)
     .setDebugModeDurationHours(0.5)
     .install(this)
 ```
@@ -370,7 +390,7 @@ Nothing extra is needed. The library ships its own ProGuard/R8 rules and keeps o
 `OGEventBoxValidator`). Your app's own R8 obfuscates the rest.
 
 The box shows event names and parameters on screen, which may include user data. Always gate it with
-`setDebugModeEnabled(BuildConfig.DEBUG)` and never enable it for end users.
+`setAvailability(OGEventBoxAvailability.DEBUG_ONLY)` and never enable it for end users.
 
 ## Known limits
 

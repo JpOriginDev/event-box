@@ -23,7 +23,7 @@ android {
             // consumer gets only the public API in readable form. See proguard-rules.pro.
             isMinifyEnabled = true
             isShrinkResources = false // not supported for libraries; the app shrinks them
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro",)
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 
@@ -37,6 +37,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+}
+
+// Every public declaration must say so explicitly, so nothing becomes API by accident.
+kotlin {
+    explicitApiWarning()
 }
 
 dependencies {

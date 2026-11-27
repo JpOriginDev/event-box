@@ -22,6 +22,7 @@ import com.ogmediaapps.eventbox.R
 import com.ogmediaapps.eventbox.filter.OGEventBoxFormat
 import com.ogmediaapps.eventbox.filter.OGEventBoxQuery
 import com.ogmediaapps.eventbox.model.OGEventBoxDebugEvent
+import com.ogmediaapps.eventbox.safeOr
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -31,6 +32,8 @@ internal data class OGEventBoxRow(
     val event: OGEventBoxDebugEvent,
     /** Time since the previous entry in the full log, or null for the first one. */
     val deltaMs: Long?,
+    /** False when the header switch hides the "+1.2s" delta. */
+    val showDelta: Boolean,
     /** The newest entry in the whole log (green and bold). */
     val isLatest: Boolean,
     /** The last row shown, which has no divider below it. */
@@ -74,6 +77,7 @@ internal class OGEventBoxAdapter(
         val warning = ContextCompat.getColor(context, R.color.og_event_box_warning)
         val userProperty = ContextCompat.getColor(context, R.color.og_event_box_user_property)
         val source = ContextCompat.getColor(context, R.color.og_event_box_source)
+        val params = ContextCompat.getColor(context, R.color.og_event_box_params)
         val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
     }
 
@@ -102,7 +106,7 @@ internal class OGEventBoxAdapter(
             text.text = SpannableStringBuilder().apply {
                 append(String.format(Locale.US, "%02d  ", event.index), palette.index)
                 append(palette.timeFormat.format(Date(event.timestampMillis)), palette.time)
-                val delta = OGEventBoxFormat.relativeTime(row.deltaMs)
+                val delta = if (row.showDelta) OGEventBoxFormat.relativeTime(row.deltaMs) else ""
                 if (delta.isNotEmpty()) append(" $delta", palette.index)
                 append("  ")
                 event.source?.let { source ->
@@ -119,6 +123,7 @@ internal class OGEventBoxAdapter(
             val stripeColor = when {
                 event.hasWarning -> palette.warning
                 OGEventBoxQuery.isUserProperty(event) -> palette.userProperty
+                !event.params.isNullOrEmpty() -> palette.params
                 else -> null
             }
             stripe.visibility = if (stripeColor != null) View.VISIBLE else View.INVISIBLE
@@ -213,7 +218,7 @@ internal class OGEventBoxAdapter(
                 oldItem.event.index == newItem.event.index
 
             override fun areContentsTheSame(oldItem: OGEventBoxRow, newItem: OGEventBoxRow) =
-                runCatching { oldItem == newItem }.getOrDefault(false)
+                safeOr(false) { oldItem == newItem }
         }
     }
 }

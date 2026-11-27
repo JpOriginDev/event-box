@@ -37,6 +37,21 @@
     public static int v(...);
 }
 
+-keep public class com.ogmediaapps.eventbox.model.OGEventBoxBubbleStyle {
+    public *;
+}
+-keep public class com.ogmediaapps.eventbox.model.OGEventBoxBubbleStyle$Builder {
+    public *;
+}
+
+-keep public enum com.ogmediaapps.eventbox.model.OGEventBoxAvailability {
+    *;
+}
+
+-keep public enum com.ogmediaapps.eventbox.model.OGEventBoxComponent {
+    *;
+}
+
 -keep public enum com.ogmediaapps.eventbox.model.OGEventBoxBackgroundMode {
     *;
 }

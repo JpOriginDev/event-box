@@ -1,6 +1,7 @@
 package com.ogmediaapps.eventbox.filter
 
 import java.util.Locale
+import com.ogmediaapps.eventbox.safeOr
 
 /**
  * Text helpers for event rows. Pure Kotlin so they can be unit tested; they never throw.
@@ -45,7 +46,7 @@ internal object OGEventBoxFormat {
             ParamLine(
                 key = key,
                 paddedKey = key.padEnd(pad),
-                value = runCatching { valueText(value) }.getOrDefault("<unprintable>"),
+                value = safeOr("<unprintable>") { valueText(value) },
                 type = typeTag(value),
             )
         }

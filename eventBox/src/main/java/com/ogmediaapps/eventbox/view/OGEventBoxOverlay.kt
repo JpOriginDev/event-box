@@ -17,6 +17,8 @@ import android.widget.FrameLayout
 import com.ogmediaapps.eventbox.data.OGEventBoxRepository
 import com.ogmediaapps.eventbox.model.OGEventBoxBackgroundMode
 import com.ogmediaapps.eventbox.viewmodel.OGEventBoxViewModel
+import com.ogmediaapps.eventbox.safeOr
+import com.ogmediaapps.eventbox.safely
 
 /**
  * Keeps exactly one [OGEventBoxView] over whichever Activity is in front, for as long as debug mode
@@ -57,6 +59,8 @@ internal object OGEventBoxOverlay : Application.ActivityLifecycleCallbacks {
         if (installed) return
         installed = true
         appContext = application
+        // Start from the host's defaults (expanded, pinned), which are set before install.
+        viewModel.resetSessionState(application)
         application.registerActivityLifecycleCallbacks(this)
     }
 
@@ -68,7 +72,7 @@ internal object OGEventBoxOverlay : Application.ActivityLifecycleCallbacks {
 
     /** Attaches or removes the box so it matches [OGEventBoxRepository.isActive]. Safe from any thread. */
     fun sync() {
-        runCatching {
+        safely {
             if (Looper.myLooper() == Looper.getMainLooper()) {
                 if (OGEventBoxRepository.isActive) attach() else detach()
             } else {
@@ -79,7 +83,7 @@ internal object OGEventBoxOverlay : Application.ActivityLifecycleCallbacks {
 
     /** Updates the resizing controls in the active view, if attached. Safe from any thread. */
     fun updateResizingState() {
-        runCatching {
+        safely {
             if (Looper.myLooper() == Looper.getMainLooper()) {
                 view?.updateResizingState()
             } else {
@@ -88,9 +92,20 @@ internal object OGEventBoxOverlay : Application.ActivityLifecycleCallbacks {
         }
     }
 
+    /** Re-applies the shown components and defaults in the active view, if attached. Safe from any thread. */
+    fun updateComponents() {
+        safely {
+            if (Looper.myLooper() == Looper.getMainLooper()) {
+                view?.updateComponents()
+            } else {
+                mainHandler.post { view?.updateComponents() }
+            }
+        }
+    }
+
     /** Re-applies the panel opacity in the active view, if attached. Safe from any thread. */
     fun updatePanelAlpha() {
-        runCatching {
+        safely {
             if (Looper.myLooper() == Looper.getMainLooper()) {
                 view?.applyPanelAlpha()
             } else {
@@ -174,7 +189,7 @@ internal object OGEventBoxOverlay : Application.ActivityLifecycleCallbacks {
         view?.let { box ->
             box.onDetaching()
             box.removeCallbacks(raiseRunnable)
-            runCatching {
+            safely {
                 if (windowParams != null) {
                     hostWindowManager?.removeViewImmediate(box)
                 } else {
@@ -192,7 +207,7 @@ internal object OGEventBoxOverlay : Application.ActivityLifecycleCallbacks {
     fun canDrawOverlays(context: Context?): Boolean {
         if (context == null) return false
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
-        return runCatching { Settings.canDrawOverlays(context) }.getOrDefault(false)
+        return safeOr(false) { Settings.canDrawOverlays(context) }
     }
 
     private fun raiseAboveNewWindows() {
@@ -202,7 +217,7 @@ internal object OGEventBoxOverlay : Application.ActivityLifecycleCallbacks {
         val params = windowParams ?: return
         if (activity.isFinishing || activity.isDestroyed) return
         if (box.isSearchInputFocused) return
-        runCatching {
+        safely {
             activity.windowManager.removeViewImmediate(box)
             activity.windowManager.addView(box, params)
         }
@@ -218,7 +233,7 @@ internal object OGEventBoxOverlay : Application.ActivityLifecycleCallbacks {
 
     private fun stopWatchingWindowFocus() {
         watchedDecor?.let { decor ->
-            runCatching { decor.viewTreeObserver.removeOnWindowFocusChangeListener(focusListener) }
+            safely { decor.viewTreeObserver.removeOnWindowFocusChangeListener(focusListener) }
         }
         watchedDecor = null
     }

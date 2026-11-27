@@ -78,85 +78,75 @@
                 android:textColor="@color/og_event_box_name"
                 android:textSize="12sp" />
 
-            <Space
-                android:id="@+id/og_event_box_spacer"
+            <!--
+                The buttons scroll sideways, so every one stays reachable (full size) on narrow
+                screens and at large font or display sizes. OGEventBoxView sets the gravity and
+                the order of the row to mirror it for a right-side bubble.
+            -->
+            <HorizontalScrollView
+                android:id="@+id/og_event_box_header_scroll"
                 android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fillViewport="true"
+                android:overScrollMode="never"
+                android:scrollbars="none">
 
-            <ImageButton
-                android:id="@+id/og_event_box_search"
-                android:layout_width="@dimen/og_event_box_header_button_width"
-                android:layout_height="@dimen/og_event_box_header_button_height"
-                android:background="@drawable/og_event_box_button_background_tall"
-                android:contentDescription="@string/og_event_box_search"
-                android:paddingStart="10dp"
-                android:paddingTop="14dp"
-                android:paddingEnd="10dp"
-                android:paddingBottom="14dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/og_event_box_ic_search"
-                android:tint="@color/og_event_box_name" />
+                <LinearLayout
+                    android:id="@+id/og_event_box_header_buttons"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical|end"
+                    android:orientation="horizontal">
 
-            <!-- Pause and Share live in the header so they work without opening search. -->
-            <ImageButton
-                android:id="@+id/og_event_box_pause"
-                android:layout_width="@dimen/og_event_box_header_button_width"
-                android:layout_height="@dimen/og_event_box_header_button_height"
-                android:layout_marginStart="@dimen/og_event_box_header_button_gap"
-                android:background="@drawable/og_event_box_button_background_tall"
-                android:contentDescription="@string/og_event_box_pause"
-                android:paddingStart="10dp"
-                android:paddingTop="14dp"
-                android:paddingEnd="10dp"
-                android:paddingBottom="14dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/og_event_box_ic_pause"
-                android:tint="@color/og_event_box_name" />
+                <!-- Shows or hides the "+1.2s" time since the previous entry on every row. -->
+                <ImageButton
+                    android:id="@+id/og_event_box_delta"
+                    style="@style/OGEventBox.HeaderButton"
+                    android:contentDescription="@string/og_event_box_delta_hide"
+                    android:src="@drawable/og_event_box_ic_timer"
+                    android:tint="@color/og_event_box_accent" />
 
-            <ImageButton
-                android:id="@+id/og_event_box_share"
-                android:layout_width="@dimen/og_event_box_header_button_width"
-                android:layout_height="@dimen/og_event_box_header_button_height"
-                android:layout_marginStart="@dimen/og_event_box_header_button_gap"
-                android:background="@drawable/og_event_box_button_background_tall"
-                android:contentDescription="@string/og_event_box_share"
-                android:paddingStart="10dp"
-                android:paddingTop="14dp"
-                android:paddingEnd="10dp"
-                android:paddingBottom="14dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/og_event_box_ic_share"
-                android:tint="@color/og_event_box_name" />
+                <ImageButton
+                    android:id="@+id/og_event_box_search"
+                    style="@style/OGEventBox.HeaderButton"
+                    android:contentDescription="@string/og_event_box_search"
+                    android:src="@drawable/og_event_box_ic_search"
+                    android:tint="@color/og_event_box_name" />
 
-            <ImageButton
-                android:id="@+id/og_event_box_pin"
-                android:layout_width="@dimen/og_event_box_header_button_width"
-                android:layout_height="@dimen/og_event_box_header_button_height"
-                android:layout_marginStart="@dimen/og_event_box_header_button_gap"
-                android:background="@drawable/og_event_box_button_background_tall"
-                android:contentDescription="@string/og_event_box_auto_shrink_on"
-                android:paddingStart="10dp"
-                android:paddingTop="14dp"
-                android:paddingEnd="10dp"
-                android:paddingBottom="14dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/og_event_box_ic_pin" />
+                <!-- Pause and Share live in the header so they work without opening search. -->
+                <ImageButton
+                    android:id="@+id/og_event_box_pause"
+                    style="@style/OGEventBox.HeaderButton"
+                    android:layout_marginStart="@dimen/og_event_box_header_button_gap"
+                    android:contentDescription="@string/og_event_box_pause"
+                    android:src="@drawable/og_event_box_ic_pause"
+                    android:tint="@color/og_event_box_name" />
 
-            <ImageButton
-                android:id="@+id/og_event_box_clear"
-                android:layout_width="@dimen/og_event_box_header_button_width"
-                android:layout_height="@dimen/og_event_box_header_button_height"
-                android:layout_marginStart="@dimen/og_event_box_header_button_gap"
-                android:background="@drawable/og_event_box_button_background_tall"
-                android:contentDescription="@string/og_event_box_clear"
-                android:paddingStart="10dp"
-                android:paddingTop="14dp"
-                android:paddingEnd="10dp"
-                android:paddingBottom="14dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/og_event_box_ic_delete"
-                android:tint="@color/og_event_box_name" />
+                <ImageButton
+                    android:id="@+id/og_event_box_share"
+                    style="@style/OGEventBox.HeaderButton"
+                    android:layout_marginStart="@dimen/og_event_box_header_button_gap"
+                    android:contentDescription="@string/og_event_box_share"
+                    android:src="@drawable/og_event_box_ic_share"
+                    android:tint="@color/og_event_box_name" />
+
+                <ImageButton
+                    android:id="@+id/og_event_box_pin"
+                    style="@style/OGEventBox.HeaderButton"
+                    android:layout_marginStart="@dimen/og_event_box_header_button_gap"
+                    android:contentDescription="@string/og_event_box_auto_shrink_on"
+                    android:src="@drawable/og_event_box_ic_pin" />
+
+                <ImageButton
+                    android:id="@+id/og_event_box_clear"
+                    style="@style/OGEventBox.HeaderButton"
+                    android:layout_marginStart="@dimen/og_event_box_header_button_gap"
+                    android:contentDescription="@string/og_event_box_clear"
+                    android:src="@drawable/og_event_box_ic_delete"
+                    android:tint="@color/og_event_box_name" />
+                </LinearLayout>
+            </HorizontalScrollView>
         </LinearLayout>
 
         <!-- Search bar, opened from the header's search button. -->

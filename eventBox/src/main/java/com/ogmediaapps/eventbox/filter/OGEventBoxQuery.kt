@@ -1,6 +1,7 @@
 package com.ogmediaapps.eventbox.filter
 
 import com.ogmediaapps.eventbox.model.OGEventBoxDebugEvent
+import com.ogmediaapps.eventbox.safeOr
 
 /**
  * Matches log entries against the search bar's text query.
@@ -88,7 +89,7 @@ internal object OGEventBoxQuery {
         }
     }
 
-    private fun safeString(value: Any?): String = runCatching { value.toString() }.getOrDefault("")
+    private fun safeString(value: Any?): String = safeOr("") { value.toString() }
 
     private const val KEYWORD_KEY = "is"
     private val KEYWORDS = setOf(

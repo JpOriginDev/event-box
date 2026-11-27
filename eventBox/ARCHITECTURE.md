@@ -20,7 +20,7 @@ Design constraints that drive most decisions:
 | No permission may be required | Window is `TYPE_APPLICATION` on the Activity token, not `SYSTEM_ALERT_WINDOW` |
 | Must float above dialogs | Own window + re-raise on focus loss (not a view in `content`) |
 | Must not steal touches from the app | Window wraps the box; it is never full-screen while collapsed |
-| Free for production users | Off by default; `log()` is a no-op while off; host gates it with `debugModeEnabled` |
+| Free for production users | Off by default; `log()` is a no-op while off; host gates it with `setAvailability` (`debugModeEnabled` is the resolved result) |
 | Must never crash the host | Window ops, prefs access and event recording are wrapped in `runCatching` |
 | Reusable by anyone | Pure Kotlin, `minSdk 21`, only `core-ktx` + coroutines, own resources, fixed colours |
 | Hard to lift the source | Not guaranteed: AGP ignores `isMinifyEnabled` for the published AAR, so obfuscation comes from the consuming app's R8, which honours the keep rules |
@@ -86,18 +86,36 @@ only names kept by ProGuard.
 
 ### 3.1 `OGEventBoxLog` (public facade `object`)
 
-- Fluent setters (all `@JvmStatic`, return `OGEventBoxLog`): `setDebugModeEnabled`,
+- Fluent setters (all `@JvmStatic`, return `OGEventBoxLog`): `setAvailability(OGEventBoxAvailability)`
+  (`DEBUG_ONLY`, `RELEASE_ONLY`, `DEBUG_AND_RELEASE`, `NEVER`; resolved at `install` from the host app's
+  debuggable flag; `setDebugModeEnabled` is deprecated and clears it),
   `setDebugModeDurationHours`, `setFirebaseChecksEnabled`, `setPanelResizingEnabled`,
-  `setBubbleIconResId`, `setBubbleIconScaleType`, `setBubbleBackgroundColor`,
-  `setBubbleBorderColor`, `setBubbleBorderWidthDp`, `setBubbleCornerRadiusDp`,
+  `setBubbleStyle` (an `OGEventBoxBubbleStyle` built with its `Builder`, or a Kotlin lambda that edits the
+  current style; the old `setBubbleIconResId` / `...ScaleType` / `...BackgroundColor` / `...BorderColor` /
+  `...BorderWidthDp` / `...CornerRadiusDp` are deprecated and write the same values),
   `setBackgroundMode`, `setMaxEvents`, `setDetectDuplicates`, `setDuplicateWindowMs`,
   `setPanelAlpha`, `install`.
 - Session: `setEnabled`, `disable`, `updateDebugModeDurationHours`, `remainingMinutes`,
   `isActive`, `isActiveFlow`, `hasOverlayPermission`, `requestOverlayPermission`.
+- User choices: `setRememberUserChoices(Boolean)` (default true), `resetUserChoices(context)`. The store keeps
+  `og_event_box_user_collapsed` (set by a manual minimize/open, not the auto-shrink; wins over
+  `expandedByDefault`) and `og_event_box_closed_by_user` (set on a close-target drop; blocks `installAndShow`
+  until app data is cleared or `setEnabled(true)`). Neither is cleared with the session.
+- Install: `install(context)` (unchanged; the box stays off until switched on) and
+  `installAndShow(context[, hours])` (install, then start a session if none is running).
 - Logging: `log(name)`, `log(name, Bundle?)`, `log(name, Map?)` (each also with a `source` tag),
   `setUserProperty`, `clear`, `events` (default `MAX_EVENTS = 200`, adjustable 10..1000 with
   `setMaxEvents`; `droppedEventCount` says how many were dropped).
 - Property setters are `@JvmSynthetic` so Java sees only the fluent form.
+- Components and defaults (one section in `OGEventBoxLog`, all optional, best set before `install`):
+  `setComponentVisible(OGEventBoxComponent, Boolean)`, `isComponentVisible`, `hideComponents(...)`,
+  `showComponents(...)`, `showOnly(...)`; start state `setStartState(expanded, pinned, deltaTimeShown)`
+  (omitted parameters keep their value) or one by one `setExpandedByDefault`, `setPinnedByDefault`,
+  `setDeltaTimeShown`; and the six button shortcuts `setClearButtonVisible`, `setPinButtonVisible`,
+  `setShareButtonVisible`, `setPauseButtonVisible`, `setSearchButtonVisible`,
+  `setDeltaTimeButtonVisible`. `OGEventBoxComponent` is a public enum (kept by ProGuard): LOGO, TITLE,
+  COUNT, the six buttons, RESIZE_HANDLE (same switch as `setPanelResizingEnabled`), UNREAD_BADGE, TIPS.
+  A default is only the start state while its control is shown; hide the control and it is final.
 
 ### 3.2 `OGEventBoxDebugEvent` (public `data class`)
 
@@ -155,10 +173,10 @@ Activity changes: `isCollapsed`, `isPinned`, `anchorX/anchorY`, `lastSeenIndex` 
 4. **Header mirroring.** `applyHeaderOrientation` re-adds header children in mirrored order when
    the bubble is on the right, so the logo always sits next to the bubble. Every size comes from
    the `og_event_box_header_*` dimens, which the layout uses too, so the two cannot drift apart.
-   On narrow panels `fitHeaderTitle` first drops the title (measured with full-size buttons, so the
-   decision does not flip as they shrink), then `fitHeaderButtons` splits the remaining width over
-   the five buttons, clamped to 28 dp..`og_event_box_header_button_width`, and trims their side
-   padding to match. Both run from the header's layout-change listener.
+   The six buttons (delta, search, pause, share, pin, clear) sit in a `HorizontalScrollView`, so
+   each keeps its full size and touch target on any screen and scrolls sideways when the row is too
+   narrow. On narrow panels `fitHeaderTitle` drops the "EVENTS" title first (the logo and count
+   stay). Runs from the header's layout-change listener.
 5. **Snapping.** `snapPosition` = `clampPosition` (inside system-bar insets); for the collapsed
    bubble x is forced to the nearer rail. Settling uses a `ValueAnimator` (`animateTo`) because
    a window cannot be moved by a view animator.

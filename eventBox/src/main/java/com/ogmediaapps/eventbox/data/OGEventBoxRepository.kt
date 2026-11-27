@@ -4,9 +4,13 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.ogmediaapps.eventbox.model.OGEventBoxAvailability
 import com.ogmediaapps.eventbox.model.OGEventBoxBackgroundMode
+import com.ogmediaapps.eventbox.model.OGEventBoxComponent
 import com.ogmediaapps.eventbox.model.OGEventBoxDebugEvent
 import com.ogmediaapps.eventbox.model.OGEventBoxPosition
+import com.ogmediaapps.eventbox.safeOr
+import com.ogmediaapps.eventbox.safely
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,6 +37,17 @@ internal object OGEventBoxRepository {
     @Volatile
     var debugModeEnabled = false
 
+    /** Set by `setAvailability`; null while the old `setDebugModeEnabled` flag is the one in use. */
+    @Volatile
+    var availability: OGEventBoxAvailability? = null
+
+    /** Turns [availability] into [debugModeEnabled] for this build of the host app. */
+    fun resolveAvailability(context: Context) {
+        val chosen = availability ?: return
+        val isDebugBuild = (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        debugModeEnabled = chosen.allows(isDebugBuild)
+    }
+
     @Volatile
     var debugModeDurationHours = 0.5
 
@@ -41,6 +56,29 @@ internal object OGEventBoxRepository {
 
     @Volatile
     var panelResizingEnabled = true
+
+    /**
+     * Components that are hidden. The clock button starts hidden; the host turns it on with
+     * `setDeltaTimeButtonVisible(true)`. [OGEventBoxComponent.RESIZE_HANDLE] lives in [panelResizingEnabled].
+     */
+    @Volatile
+    var hiddenComponents: Set<OGEventBoxComponent> = setOf(OGEventBoxComponent.DELTA_TIME_BUTTON)
+
+    /** Host default for the "+1.2s" times; a tester's own choice wins while the button is shown. */
+    @Volatile
+    var deltaTimeShown = false
+
+    /** Host default for the pin: true keeps the open panel from auto-shrinking. */
+    @Volatile
+    var pinnedByDefault = false
+
+    /** Host default for the start state: true opens the panel instead of showing the bubble. */
+    @Volatile
+    var expandedByDefault = false
+
+    /** True: the tester's minimize and close choices are remembered across launches. */
+    @Volatile
+    var rememberUserChoices = true
 
     @Volatile
     var backgroundMode = OGEventBoxBackgroundMode.OFF
@@ -140,7 +178,7 @@ internal object OGEventBoxRepository {
         if (!isActive || name.isBlank()) return
         // A testing aid must never crash the host app, even when a caller's map is mutated
         // concurrently or holds a value whose toString() throws.
-        runCatching {
+        safely {
             val snapshot = params?.let { LinkedHashMap(it) }
             val warnings = if (firebaseChecksEnabled) {
                 com.ogmediaapps.eventbox.validator.OGEventBoxValidator.validateEvent(name, snapshot)
@@ -169,7 +207,7 @@ internal object OGEventBoxRepository {
 
     fun setUserProperty(name: String, value: String?) {
         if (!isActive || name.isBlank()) return
-        runCatching {
+        safely {
             val warnings = if (firebaseChecksEnabled) {
                 com.ogmediaapps.eventbox.validator.OGEventBoxValidator.validateUserProperty(name, value)
             } else {
@@ -215,7 +253,7 @@ internal object OGEventBoxRepository {
 
     private fun sameParams(a: Map<String, Any?>?, b: Map<String, Any?>?): Boolean {
         if (a.isNullOrEmpty() && b.isNullOrEmpty()) return true
-        return runCatching { a == b }.getOrDefault(false)
+        return safeOr(false) { a == b }
     }
 
     private fun trimToMax() {

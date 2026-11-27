@@ -1,6 +1,7 @@
 package com.ogmediaapps.eventbox.filter
 
 import com.ogmediaapps.eventbox.model.OGEventBoxDebugEvent
+import com.ogmediaapps.eventbox.safeOr
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -56,7 +57,7 @@ internal object OGEventBoxExport {
         is Int, is Long, is Short, is Byte -> value.toString()
         is Double -> if (value.isNaN() || value.isInfinite()) quote(value.toString()) else value.toString()
         is Float -> if (value.isNaN() || value.isInfinite()) quote(value.toString()) else value.toString()
-        else -> quote(runCatching { value.toString() }.getOrDefault("<unprintable>"))
+        else -> quote(safeOr("<unprintable>") { value.toString() })
     }
 
     fun quote(text: String): String {

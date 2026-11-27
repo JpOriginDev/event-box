@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared look of the six header buttons (delta, search, pause, share, pin, clear). -->
+    <style name="OGEventBox.HeaderButton" parent="">
+        <item name="android:layout_width">@dimen/og_event_box_header_button_width</item>
+        <item name="android:layout_height">@dimen/og_event_box_header_button_height</item>
+        <item name="android:background">@drawable/og_event_box_button_background_tall</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingTop">14dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:paddingBottom">14dp</item>
+        <item name="android:scaleType">fitCenter</item>
+    </style>
+</resources>

@@ -2,6 +2,7 @@ package com.ogmediaapps.eventbox.viewmodel
 
 import android.content.Context
 import com.ogmediaapps.eventbox.data.OGEventBoxRepository
+import com.ogmediaapps.eventbox.data.OGEventBoxStore
 import com.ogmediaapps.eventbox.filter.OGEventBoxQuery
 import com.ogmediaapps.eventbox.model.OGEventBoxDebugEvent
 import com.ogmediaapps.eventbox.model.OGEventBoxPosition
@@ -18,10 +19,10 @@ internal class OGEventBoxViewModel(private val repository: OGEventBoxRepository 
     var anchorX: Float = Float.NaN
     var anchorY: Float = Float.NaN
 
-    private var _isCollapsed: Boolean = true
+    private var _isCollapsed: Boolean = !repository.expandedByDefault
     val isCollapsed: Boolean get() = _isCollapsed
 
-    private var _isPinned: Boolean = false
+    private var _isPinned: Boolean = repository.pinnedByDefault
     val isPinned: Boolean get() = _isPinned
 
     var lastSeenIndex: Int = 0
@@ -52,11 +53,16 @@ internal class OGEventBoxViewModel(private val repository: OGEventBoxRepository 
     val droppedCount: Int get() = repository.droppedCount
     val maxEvents: Int get() = repository.maxEvents
 
-    fun resetSessionState() {
+    /**
+     * Back to the start state. With a [context], the tester's remembered minimize / open choice
+     * wins over the host's `expandedByDefault`.
+     */
+    fun resetSessionState(context: Context? = null) {
         anchorX = Float.NaN
         anchorY = Float.NaN
-        _isCollapsed = true
-        _isPinned = false
+        val remembered = if (context != null && repository.rememberUserChoices) OGEventBoxStore.userCollapsed(context) else null
+        _isCollapsed = remembered ?: !repository.expandedByDefault
+        _isPinned = repository.pinnedByDefault
         lastSeenIndex = 0
         customPanelHeight = null
         resetSearch()
@@ -75,6 +81,13 @@ internal class OGEventBoxViewModel(private val repository: OGEventBoxRepository 
         if (!_isCollapsed) return
         _isCollapsed = false
         lastSeenIndex = repository.events.value.lastOrNull()?.index ?: 0
+        updateUiState()
+    }
+
+    /** Sets the pin directly, for the host app's default when the pin button is hidden. */
+    fun setPinned(pinned: Boolean) {
+        if (_isPinned == pinned) return
+        _isPinned = pinned
         updateUiState()
     }
 
@@ -164,7 +177,9 @@ internal class OGEventBoxViewModel(private val repository: OGEventBoxRepository 
     fun visibleEvents(events: List<OGEventBoxDebugEvent>): List<OGEventBoxDebugEvent> =
         OGEventBoxQuery.apply(pausedSnapshot ?: events, _query)
 
-    fun closeTargetDropped() {
+    fun closeTargetDropped(context: Context? = null) {
+        // Remembered so the box does not open again by itself until the app's data is cleared.
+        if (context != null && repository.rememberUserChoices) OGEventBoxStore.setClosedByUser(context, true)
         repository.disable()
         resetSessionState()
     }

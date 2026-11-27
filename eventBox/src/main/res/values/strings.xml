@@ -48,7 +48,6 @@
     <string name="og_event_box_row_expand_hint">Tap for details, long-press to copy</string>
 
     <!-- List status. -->
-    <string name="og_event_box_jump_latest">↓ Latest</string>
     <plurals name="og_event_box_jump_new">
         <item quantity="one">↓ %1$d new</item>
         <item quantity="other">↓ %1$d new</item>
@@ -60,6 +59,10 @@
         <item quantity="other">%1$d older events dropped (log keeps %2$d)</item>
     </plurals>
     <string name="og_event_box_pause">Pause the list</string>
+    <string name="og_event_box_delta_hide">Hide time since previous event</string>
+    <string name="og_event_box_delta_show">Show time since previous event</string>
+    <string name="og_event_box_delta_hidden_toast">Time since previous event: off</string>
+    <string name="og_event_box_delta_shown_toast">Time since previous event: on</string>
     <string name="og_event_box_resume_description">Resume live updates</string>
 
     <!-- Panel opacity (long-press the panel logo). -->
