@@ -18,6 +18,18 @@ Think of it as **Firebase DebugView on the device itself**: no adb, no USB cable
 - No permissions needed (the background overlay is optional and opt-in).
 - `minSdk 21`, pure Kotlin, works from Java too.
 
+> **Latest (next release):**
+> - **Clock button**: show the time since the previous event on each row (`+1.2s`). It is **off by
+>   default**; turn it on in code.
+> - **Parameter stripe**: rows that carry parameters get a teal stripe.
+> - **Quota notice**: a small pill appears when you go over Firebase's 500 event names or 25 user
+>   properties.
+> - **System event names**: logging a name Firebase collects itself (like `first_open`) gets a warning.
+> - **Choose what shows**: hide any button or part, and pick how the box starts.
+> - **Choose where it shows**: `setAvailability` replaces `BuildConfig.DEBUG`.
+> - **Bubble style and panel opacity** are set in one call each.
+> - The header buttons scroll sideways, so all of them stay reachable on narrow phones.
+>
 > **New in 1.4.2:** search (`is:warning`, `key:value`, `!exclude`), pause, share as JSON, undo for
 > Clear, source tags, duplicate merging, a configurable log size, and a remembered panel height and
 > opacity. The header Resize and Minimize buttons are gone: tap the logo to shrink the panel and
@@ -45,7 +57,8 @@ parameters) are often found only after release.
 - **Floating bubble and panel**: drag it anywhere, it snaps to the screen edge, shows an unread
   badge, and shrinks back on its own.
 - **Firebase limit warnings**: a ⚠ icon on any event that breaks a Firebase Analytics rule, with
-  the exact reason on tap.
+  the exact reason on tap. This includes names that are too long and names Firebase reserves for
+  itself. A small pill tells you when you pass the 500 event name or 25 user property limit.
 - **Search**: type `login`, `screen:home`, `firebase`, `is:warning` or `!user_property`.
   Matches are highlighted.
 - **Copy and share**: long-press a row to copy it as JSON, or share the visible log. Long
@@ -55,7 +68,7 @@ parameters) are often found only after release.
 - **Fast list**: a RecyclerView that only redraws the rows that changed. The log size can be set
   from 10 to 1000 (200 by default), with an "N older events dropped" notice.
 - **Spot bugs fast**: back-to-back duplicates are merged into one row shown as `×N`, rows get a
-  colour stripe (amber = warning, blue = user property), `+1.2s` deltas, a key/value table with
+  colour stripe (amber = warning, blue = user property, teal = has parameters), optional `+1.2s` deltas, a key/value table with
   value types (`S`/`L`/`D`/`B`), and pause/resume.
 - **Source tags**: tell Firebase, AppsFlyer, Mixpanel and other events apart, and search by source.
 - **Resizable, pinnable panel**: drag the bottom handle to change the height (double-tap it to
@@ -70,6 +83,8 @@ parameters) are often found only after release.
   throws into your app.
 - **Simple API**: fluent setup, `log()` with a name, a `Bundle` or a `Map`, plus user properties.
 - **Customizable bubble**: your own icon, colors, border and corner radius.
+- **Choose what shows**: hide any button or part of the box, and pick how it starts (open or
+  bubble, pinned or not).
 - **Reactive**: read events and state as Kotlin `StateFlow`.
 - **Kotlin and Java**: both are supported, with its own R8 rules built in.
 
@@ -234,13 +249,23 @@ Event Box automatically checks each logged event against Firebase Analytics rule
 6. **User Properties**: Max 25 per app (names ≤ 24 chars, values ≤ 36 chars).
 7. **Daily Event Volume**: Warns when approaching ~100,000 events/user/day throttle.
 
+Event Box also warns when:
+- An event name is **too long**, has invalid characters, or starts with `ga_`, `google_` or `firebase_`.
+- An event uses a name **Firebase collects by itself**, such as `first_open` or `session_start`.
+  Don't log these yourself. (`screen_view` is allowed.)
+
 If an event breaks any of these rules, a warning icon (**⚠**) appears at the end of its row. Tap
 it to expand the row and see the full event name and the exact reason; opening another row closes
 the first. Type `is:warning` in search to list only the events with warnings.
 
+**Quota notice:** once you pass 500 distinct event names or 25 user properties, a small amber pill
+at the top of the list reads, for example, `Over Firebase limit · events 501/500`. It goes away when
+you clear the log.
+
 #### Enabling or Disabling Firebase Checks
 
-Firebase checks are on by default. Turn them off or on at any time:
+Firebase checks are on by default. Turn them off or on at any time. While they are off, there are
+no warnings and no quota notice:
 
 **Kotlin**
 ```kotlin
@@ -283,6 +308,8 @@ OGEventBoxLog.setPanelResizingEnabled(false);
       default height. While you drag, its bar widens and lights up. Until you have resized once,
       it briefly lights up each time the panel opens.
     - **Warning icon**: tap to smoothly expand/collapse Firebase limit warnings.
+    - **Clock** (optional, hidden by default): shows or hides the `+1.2s` time since the previous
+      event on every row. Your choice is remembered. See [Show or hide parts](#show-or-hide-parts-of-the-box-optional).
     - **Pin**: stops it from auto-shrinking.
     - **Clear** (trash icon): empties the log. A `Cleared N events · UNDO` pill stays for 4
       seconds; tap it to bring the entries back (events logged in the meantime are kept too).
@@ -299,10 +326,10 @@ OGEventBoxLog.setPanelResizingEnabled(false);
 - **Close**: drag the box toward the bottom of the screen and drop it on the close target to end
   the session.
 
-The header reads `[Logo] [Count] … [Search] [Pause] [Share] [Pin] [Clear]`, mirrored when the
-bubble is on the right edge. On narrow phones the `EVENTS` title hides itself first, and if that is
-still not enough the five buttons shrink (28 dp to 40 dp wide, still 48 dp tall) to share the
-space, so none of them is ever pushed off the edge.
+The header reads `[Logo] [Count] … [Clock] [Search] [Pause] [Share] [Pin] [Clear]`, mirrored when
+the bubble is on the right edge. The clock is hidden unless you turn it on. On narrow phones the
+`EVENTS` title hides itself first, and the buttons scroll sideways if there is still not enough
+room, so none of them is ever pushed off the edge.
 
 The open panel stays between the system bars: in landscape it is not drawn under the navigation
 bar, whichever side the bubble is on.
@@ -327,6 +354,33 @@ OGEventBoxLog.setBubbleStyle {
     .setDebugModeDurationHours(0.5)
     .install(this)
 ```
+
+## Show or hide parts of the box (optional)
+
+Everything is shown by default, except the clock button. Change it before `install()`, or live:
+
+```kotlin
+OGEventBoxLog
+    .setStartState(expanded = true, pinned = true, deltaTimeShown = true)
+    .setDeltaTimeButtonVisible(true)                 // show the clock button
+    .hideComponents(OGEventBoxComponent.SHARE_BUTTON, OGEventBoxComponent.TIPS)
+    .install(this)
+```
+
+| Call | What it does |
+|---|---|
+| `setComponentVisible(component, visible)` | Show or hide one part |
+| `hideComponents(...)` / `showComponents(...)` | Hide or show several parts |
+| `showOnly(...)` | Show only the parts you list |
+| `setStartState(expanded, pinned, deltaTimeShown)` | How the box starts. Anything you leave out keeps its value |
+| `setDeltaTimeButtonVisible(true)` | Show the clock button (hidden by default) |
+| `setDeltaTimeShown(true)` | Start with the `+1.2s` times visible (off by default) |
+
+Parts you can hide: `LOGO`, `TITLE`, `COUNT`, `CLEAR_BUTTON`, `PIN_BUTTON`, `SHARE_BUTTON`,
+`PAUSE_BUTTON`, `SEARCH_BUTTON`, `DELTA_TIME_BUTTON`, `RESIZE_HANDLE`, `UNREAD_BADGE`, `TIPS`.
+
+A tester can change the pin or the time display while its button is shown. Hide the button and
+your value is final.
 
 ## Keep it visible in the background (optional)
 
@@ -362,32 +416,63 @@ Without it, `hasOverlayPermission()` returns `false` and the box behaves as with
 
 ## Other controls
 
+### Session and status
+
 | Call | What it does |
 |---|---|
-| `OGEventBoxLog.setFirebaseChecksEnabled(enabled)` | Enables or disables Firebase limits checks |
-| `OGEventBoxLog.setPanelResizingEnabled(enabled)` | Enables or disables panel height resizing |
-| `OGEventBoxLog.setBackgroundMode(mode)` | Keeps the box visible in the background: `OFF`, `AUTO` or `OVERLAY_ONLY` |
-| `OGEventBoxLog.hasOverlayPermission(context)` | Is "Display over other apps" granted? |
-| `OGEventBoxLog.requestOverlayPermission(context)` | Opens the system screen to grant it |
-| `OGEventBoxLog.disable()` | Ends the session now |
-| `OGEventBoxLog.updateDebugModeDurationHours(context, 1.0)` | Changes the session length |
-| `OGEventBoxLog.isActive` | Is the box on? (`Boolean`) |
-| `OGEventBoxLog.isActiveFlow` | Same, as a `StateFlow<Boolean>` |
+| `OGEventBoxLog.isActive` | Is the box on? |
+| `OGEventBoxLog.isActiveFlow` | Same, as a `StateFlow` |
 | `OGEventBoxLog.remainingMinutes(context)` | Minutes left (0 when off) |
-| `OGEventBoxLog.events` | The log as `StateFlow<List<OGEventBoxDebugEvent>>` (200 by default) |
+| `OGEventBoxLog.updateDebugModeDurationHours(context, 1.0)` | Changes the session length |
+| `OGEventBoxLog.disable()` | Ends the session now |
+
+### Logging
+
+| Call | What it does |
+|---|---|
+| `OGEventBoxLog.log(name, params, source)` | Logs with a source tag, e.g. `"firebase"` |
+| `OGEventBoxLog.setUserProperty(name, value)` | Records a user property |
+| `OGEventBoxLog.events` | The log as a `StateFlow` |
 | `OGEventBoxLog.clear()` | Empties the log |
-| `OGEventBoxLog.setUserProperty(name, value)` | Records a user property (checked against Firebase limits) |
-| `OGEventBoxLog.log(name, params, source)` | Logs with a source tag, e.g. `"firebase"` (also `OGEventBoxAnalytics.wrap(sink, source = ...)`) |
-| `OGEventBoxLog.setMaxEvents(n)` | Log size, 10..1000 (default 200); `droppedEventCount` tells how many were dropped |
-| `OGEventBoxLog.setDetectDuplicates(enabled)` | Merges identical back-to-back events into one `×N` row (default on) |
-| `OGEventBoxLog.setDuplicateWindowMs(ms)` | How close together duplicates must be (default 500) |
-| `OGEventBoxLog.setPanelAlpha(0.6f..1f)` | Panel background opacity (text stays opaque) |
+| `OGEventBoxLog.setMaxEvents(n)` | Log size, 10 to 1000 (default 200) |
+| `OGEventBoxLog.setDetectDuplicates(enabled)` | Merges repeated events into one `×N` row |
+| `OGEventBoxLog.setDuplicateWindowMs(ms)` | How close duplicates must be (default 500 ms) |
+
+### What shows and how it starts
+
+| Call | What it does |
+|---|---|
+| `OGEventBoxLog.setStartState(expanded, pinned, deltaTimeShown)` | How the box starts |
+| `OGEventBoxLog.setComponentVisible(component, visible)` | Shows or hides one part |
+| `OGEventBoxLog.setDeltaTimeButtonVisible(visible)` | Shows the clock button (hidden by default) |
+| `OGEventBoxLog.setDeltaTimeShown(shown)` | Starts with `+1.2s` times on (off by default) |
+
+### Panel
+
+| Call | What it does |
+|---|---|
+| `OGEventBoxLog.setPanelAlpha(0.6f..1f)` | Panel opacity, 0.6 to 1 |
+| `OGEventBoxLog.setPanelResizingEnabled(enabled)` | Turns height resizing on or off |
+
+### Background
+
+| Call | What it does |
+|---|---|
+| `OGEventBoxLog.setBackgroundMode(mode)` | Show in background: `OFF`, `AUTO`, `OVERLAY_ONLY` |
+| `OGEventBoxLog.hasOverlayPermission(context)` | Is "Display over other apps" granted? |
+| `OGEventBoxLog.requestOverlayPermission(context)` | Opens the screen to grant it |
+
+### Firebase checks
+
+| Call | What it does |
+|---|---|
+| `OGEventBoxLog.setFirebaseChecksEnabled(enabled)` | Turns Firebase limit checks on or off |
 
 ## Release builds
 
 Nothing extra is needed. The library ships its own ProGuard/R8 rules and keeps only the public API
 (`OGEventBoxLog`, `OGEventBoxAnalytics`, `OGEventBoxDebugEvent`, `OGEventBoxBackgroundMode`,
-`OGEventBoxValidator`). Your app's own R8 obfuscates the rest.
+`OGEventBoxAvailability`, `OGEventBoxComponent`, `OGEventBoxBubbleStyle`, `OGEventBoxValidator`). Your app's own R8 obfuscates the rest.
 
 The box shows event names and parameters on screen, which may include user data. Always gate it with
 `setAvailability(OGEventBoxAvailability.DEBUG_ONLY)` and never enable it for end users.
