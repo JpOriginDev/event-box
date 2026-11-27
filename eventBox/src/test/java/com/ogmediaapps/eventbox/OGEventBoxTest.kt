@@ -104,6 +104,16 @@ class OGEventBoxTest {
     }
 
     @Test
+    fun testSystemEventNameWarning() {
+        val v = com.ogmediaapps.eventbox.validator.OGEventBoxValidator
+        assertTrue(v.validateEvent("first_open").any { it.contains("automatically collected") })
+        assertTrue(v.validateEvent("session_start").any { it.contains("automatically collected") })
+        // Manually logging screen_view is the documented way to track screens, so it stays quiet.
+        assertTrue(v.validateEvent("screen_view").none { it.contains("automatically collected") })
+        assertTrue(v.validateEvent("valid_purchase_event").isEmpty())
+    }
+
+    @Test
     fun testEventNameLengthLimit() {
         val longName = "this_is_an_extremely_long_event_name_that_exceeds_forty_characters"
         val warnings = com.ogmediaapps.eventbox.validator.OGEventBoxValidator.validateEvent(longName)

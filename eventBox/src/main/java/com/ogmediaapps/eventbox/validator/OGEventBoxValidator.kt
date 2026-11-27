@@ -119,8 +119,15 @@ object OGEventBoxValidator {
             warnings.add("Event name starts with a reserved Firebase prefix ('ga_', 'google_', or 'firebase_').")
         }
 
+        // Firebase collects these itself; logging one by hand is reserved and can clash with it.
+        // "screen_view" is left out: logging it manually is the documented way to track screens.
+        val lowerName = trimmedName.lowercase(Locale.US)
+        val isAutomatic = AUTOMATIC_EVENTS.contains(lowerName)
+        if (isAutomatic && lowerName != "screen_view") {
+            warnings.add("Event name '$trimmedName' is a Firebase automatically collected event name. Don't log it yourself: it is reserved and can be ignored or duplicate the automatic event.")
+        }
+
         // [1] Distinct event names limit (max 500 custom events)
-        val isAutomatic = AUTOMATIC_EVENTS.contains(trimmedName.lowercase(Locale.US))
         if (!isAutomatic) {
             if (!distinctCustomEvents.contains(trimmedName)) {
                 if (distinctCustomEvents.size >= MAX_DISTINCT_EVENTS) {

@@ -51,6 +51,7 @@ import com.ogmediaapps.eventbox.data.OGEventBoxStore
 import com.ogmediaapps.eventbox.filter.OGEventBoxQuery
 import com.ogmediaapps.eventbox.model.OGEventBoxComponent
 import com.ogmediaapps.eventbox.model.OGEventBoxDebugEvent
+import com.ogmediaapps.eventbox.validator.OGEventBoxValidator
 import com.ogmediaapps.eventbox.viewmodel.OGEventBoxViewModel
 import com.ogmediaapps.eventbox.view.OGEventBoxViewConstants.ANIMATION_MS
 import com.ogmediaapps.eventbox.view.OGEventBoxViewConstants.AUTO_SHRINK_DELAY_MS
@@ -117,6 +118,7 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
     private val tipView: TextView
     private val undoPill: TextView
     private val jumpPill: TextView
+    private val limitPill: TextView
     private val pauseButton: ImageButton
     private val bubble: View
     private val bubbleIcon: ImageView
@@ -251,6 +253,7 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
             }
         })
         jumpPill = findViewById(R.id.og_event_box_jump)
+        limitPill = findViewById(R.id.og_event_box_limit)
         pauseButton = findViewById(R.id.og_event_box_pause)
 
         layoutManager = LinearLayoutManager(context)
@@ -770,6 +773,7 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         emptyView.isVisible = visible.isEmpty()
         emptyView.setText(if (events.isNotEmpty() && filtering) R.string.og_event_box_no_match else R.string.og_event_box_empty)
         renderDropped()
+        updateLimitPill()
 
         if (expandedEventIndex != null && visible.none { it.index == expandedEventIndex }) {
             expandedEventIndex = null
@@ -820,6 +824,31 @@ internal class OGEventBoxView(context: Context, private val viewModel: OGEventBo
         droppedView.isVisible = dropped > 0
         if (dropped > 0) {
             droppedView.text = resources.getQuantityString(R.plurals.og_event_box_dropped, dropped, dropped, viewModel.maxEvents)
+        }
+    }
+
+    /**
+     * Shows a small notice once more than Firebase's 500 distinct event names or 25 user properties
+     * have been seen, with the current counts. Hidden again after the log is cleared, and never
+     * shown while Firebase checks are off ([OGEventBoxLog.firebaseChecksEnabled]).
+     */
+    private fun updateLimitPill() {
+        if (!OGEventBoxRepository.firebaseChecksEnabled) {
+            limitPill.isVisible = false
+            return
+        }
+        val events = OGEventBoxValidator.getDistinctCustomEventsCount()
+        val props = OGEventBoxValidator.getDistinctUserPropertiesCount()
+        val parts = ArrayList<String>(2)
+        if (events > OGEventBoxValidator.MAX_DISTINCT_EVENTS) {
+            parts += context.getString(R.string.og_event_box_limit_events, events, OGEventBoxValidator.MAX_DISTINCT_EVENTS)
+        }
+        if (props > OGEventBoxValidator.MAX_USER_PROPERTIES) {
+            parts += context.getString(R.string.og_event_box_limit_user_properties, props, OGEventBoxValidator.MAX_USER_PROPERTIES)
+        }
+        limitPill.isVisible = parts.isNotEmpty()
+        if (parts.isNotEmpty()) {
+            limitPill.text = context.getString(R.string.og_event_box_limit_over, parts.joinToString(" · "))
         }
     }
 
